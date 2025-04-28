@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -30,7 +29,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Mail, Lock, Github, Twitter, Facebook, Instagram, User } from "lucide-react";
 
-// Password regex: at least 8 chars, 1 uppercase, 1 lowercase, 1 number
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 
 const passwordResetSchema = z.object({
@@ -201,7 +199,7 @@ const Auth = () => {
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
             <div className="flex justify-center mb-4">
-              <Logo />
+              <Logo className="h-6" />
             </div>
             <h1 className="text-2xl font-bold">Reset Your Password</h1>
             <p className="text-muted-foreground">Enter your email and the verification code to reset your password</p>
@@ -279,7 +277,7 @@ const Auth = () => {
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
           <div className="flex justify-center mb-4">
-            <Logo />
+            <Logo className="h-6" />
           </div>
           <h1 className="text-2xl font-bold">Welcome to The7Connect</h1>
           <p className="text-muted-foreground">Sign in or create an account to get started</p>

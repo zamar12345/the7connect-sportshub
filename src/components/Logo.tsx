@@ -6,7 +6,7 @@ const Logo = ({ className = "" }: { className?: string }) => {
     <img 
       src="/lovable-uploads/3a38b4d2-f711-49d6-ae36-c69a051450ba.png"
       alt="The7Connect Logo"
-      className={`h-6 ${className}`}
+      className={`h-4 w-auto ${className}`}
     />
   );
 };
