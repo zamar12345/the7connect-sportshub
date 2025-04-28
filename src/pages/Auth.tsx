@@ -1,18 +1,86 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Logo from "@/components/Logo";
+import { useAuth } from "@/context/AuthProvider";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose
+} from "@/components/ui/dialog";
+import { 
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage 
+} from "@/components/ui/form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { Mail, Lock, Github, Twitter } from "lucide-react";
+
+const passwordResetSchema = z.object({
+  email: z.string().email("Please enter a valid email address")
+});
+
+const passwordUpdateSchema = z.object({
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  confirmPassword: z.string().min(6, "Password must be at least 6 characters")
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"]
+});
 
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [isResetMode, setIsResetMode] = useState(false);
+  const [otp, setOtp] = useState("");
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { resetPassword, verifyOtp, updatePassword } = useAuth();
+
+  // Form for password reset request
+  const resetForm = useForm<z.infer<typeof passwordResetSchema>>({
+    resolver: zodResolver(passwordResetSchema),
+    defaultValues: {
+      email: ""
+    }
+  });
+
+  // Form for setting new password
+  const newPasswordForm = useForm<z.infer<typeof passwordUpdateSchema>>({
+    resolver: zodResolver(passwordUpdateSchema),
+    defaultValues: {
+      password: "",
+      confirmPassword: ""
+    }
+  });
+
+  useEffect(() => {
+    // Check if user came from password reset email
+    const reset = searchParams.get("reset");
+    if (reset === "true") {
+      setIsResetMode(true);
+      const recoveryToken = searchParams.get("token");
+      if (recoveryToken) {
+        setOtp(recoveryToken);
+      }
+    }
+  }, [searchParams]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,6 +90,9 @@ const Auth = () => {
       const { error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth?verification=true`,
+        }
       });
       
       if (error) throw error;
@@ -55,6 +126,126 @@ const Auth = () => {
     }
   };
 
+  const handlePasswordResetRequest = async (values: z.infer<typeof passwordResetSchema>) => {
+    try {
+      await resetPassword(values.email);
+      setResetDialogOpen(false);
+    } catch (error) {
+      // Error is handled in resetPassword function
+    }
+  };
+
+  const handleSetNewPassword = async (values: z.infer<typeof passwordUpdateSchema>) => {
+    try {
+      if (!email || !otp) {
+        toast.error("Email and verification code are required");
+        return;
+      }
+
+      await verifyOtp(email, otp);
+      await updatePassword(values.password);
+      
+      setIsResetMode(false);
+      toast.success("Password has been reset successfully. Please sign in with your new password.");
+    } catch (error) {
+      // Error is handled in verifyOtp and updatePassword functions
+    }
+  };
+
+  const handleSocialLogin = async (provider: 'github' | 'twitter') => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}`,
+        },
+      });
+      
+      if (error) throw error;
+    } catch (error: any) {
+      toast.error(`Error signing in with ${provider}: ${error.message}`);
+    }
+  };
+
+  if (isResetMode) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
+        <div className="w-full max-w-md space-y-8">
+          <div className="text-center">
+            <div className="flex justify-center mb-4">
+              <Logo />
+            </div>
+            <h1 className="text-2xl font-bold">Reset Your Password</h1>
+            <p className="text-muted-foreground">Enter your email and the verification code to reset your password</p>
+          </div>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+              <Input
+                type="text"
+                placeholder="Verification Code"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                required
+              />
+            </div>
+
+            <Form {...newPasswordForm}>
+              <form onSubmit={newPasswordForm.handleSubmit(handleSetNewPassword)} className="space-y-4">
+                <FormField
+                  control={newPasswordForm.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input
+                          type="password"
+                          placeholder="New Password"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={newPasswordForm.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input
+                          type="password"
+                          placeholder="Confirm New Password"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button 
+                  type="submit" 
+                  className="w-full bg-sport-green hover:bg-sport-green/90"
+                  disabled={loading}
+                >
+                  {loading ? "Resetting Password..." : "Reset Password"}
+                </Button>
+              </form>
+            </Form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-8">
@@ -75,20 +266,66 @@ const Auth = () => {
           <TabsContent value="signin">
             <form onSubmit={handleSignIn} className="space-y-4">
               <div className="space-y-2">
-                <Input
-                  type="email"
-                  placeholder="Email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-                <Input
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
+                <div className="flex items-center space-x-2">
+                  <Mail className="text-muted-foreground w-5 h-5" />
+                  <Input
+                    type="email"
+                    placeholder="Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Lock className="text-muted-foreground w-5 h-5" />
+                  <Input
+                    type="password"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="text-right">
+                  <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="link" className="p-0 text-sport-blue">
+                        Forgot password?
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Reset your password</DialogTitle>
+                        <DialogDescription>
+                          Enter your email and we'll send you instructions to reset your password.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <Form {...resetForm}>
+                        <form onSubmit={resetForm.handleSubmit(handlePasswordResetRequest)} className="space-y-4">
+                          <FormField
+                            control={resetForm.control}
+                            name="email"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Email</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Enter your email" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <div className="flex justify-end space-x-2">
+                            <DialogClose asChild>
+                              <Button variant="outline">Cancel</Button>
+                            </DialogClose>
+                            <Button type="submit">Send Reset Instructions</Button>
+                          </div>
+                        </form>
+                      </Form>
+                    </DialogContent>
+                  </Dialog>
+                </div>
               </div>
               <Button 
                 type="submit" 
@@ -97,27 +334,63 @@ const Auth = () => {
               >
                 {loading ? "Signing in..." : "Sign In"}
               </Button>
+              
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-muted"></div>
+                </div>
+                <div className="relative flex justify-center">
+                  <span className="bg-background px-2 text-xs text-muted-foreground">
+                    OR CONTINUE WITH
+                  </span>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => handleSocialLogin('github')}
+                >
+                  <Github className="mr-2 h-4 w-4" /> GitHub
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => handleSocialLogin('twitter')}
+                >
+                  <Twitter className="mr-2 h-4 w-4" /> Twitter
+                </Button>
+              </div>
             </form>
           </TabsContent>
           
           <TabsContent value="signup">
             <form onSubmit={handleSignUp} className="space-y-4">
               <div className="space-y-2">
-                <Input
-                  type="email"
-                  placeholder="Email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-                <Input
-                  type="password"
-                  placeholder="Password (min 6 characters)"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  minLength={6}
-                  required
-                />
+                <div className="flex items-center space-x-2">
+                  <Mail className="text-muted-foreground w-5 h-5" />
+                  <Input
+                    type="email"
+                    placeholder="Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Lock className="text-muted-foreground w-5 h-5" />
+                  <Input
+                    type="password"
+                    placeholder="Password (min 6 characters)"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    minLength={6}
+                    required
+                  />
+                </div>
               </div>
               <Button 
                 type="submit" 
@@ -126,6 +399,36 @@ const Auth = () => {
               >
                 {loading ? "Creating account..." : "Sign Up"}
               </Button>
+              
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-muted"></div>
+                </div>
+                <div className="relative flex justify-center">
+                  <span className="bg-background px-2 text-xs text-muted-foreground">
+                    OR CONTINUE WITH
+                  </span>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => handleSocialLogin('github')}
+                >
+                  <Github className="mr-2 h-4 w-4" /> GitHub
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => handleSocialLogin('twitter')}
+                >
+                  <Twitter className="mr-2 h-4 w-4" /> Twitter
+                </Button>
+              </div>
             </form>
           </TabsContent>
         </Tabs>
