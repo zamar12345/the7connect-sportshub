@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CreditCard } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client"; 
 
 const DonateButton = ({ recipientId, recipientName }: { recipientId: string; recipientName: string }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -11,8 +12,16 @@ const DonateButton = ({ recipientId, recipientName }: { recipientId: string; rec
     try {
       setIsLoading(true);
       
-      // Since we might not have Supabase connected yet, we'll simulate the payment flow
-      // In a real environment, this would use Supabase functions to communicate with Stripe
+      // Check if user is authenticated
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast.error("Please sign in to donate");
+        window.location.href = "/auth";
+        return;
+      }
+      
+      // For now, we'll simulate the payment flow until we set up Stripe
       toast.info(`Processing donation for ${recipientName}...`);
       
       // Simulate API delay
