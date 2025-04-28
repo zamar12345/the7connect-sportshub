@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { HashtagSearchResult, SearchOptions } from "./types";
@@ -33,7 +34,7 @@ export const searchHashtags = async (
       const tags = post.content.match(/#(\w+)/g) || [];
       
       // Count occurrences and track last used date
-      tags.forEach(tag => {
+      tags.forEach((tag: string) => {
         const cleanTag = tag.substring(1).toLowerCase(); // Remove # and convert to lowercase
         if (cleanTag.includes(searchTag.toLowerCase())) {
           if (!hashtags[cleanTag]) {
