@@ -1,11 +1,12 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { RouterProvider, createBrowserRouter } from "react-router-dom";
+import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/context/AuthProvider";
-import ProtectedRoute from "@/components/ProtectedRoute";
+import { Toaster } from "sonner";
+
+// Import all pages
+import Index from "@/pages/Index";
 import Auth from "@/pages/Auth";
 import Home from "@/pages/Home";
 import Explore from "@/pages/Explore";
@@ -15,60 +16,77 @@ import Profile from "@/pages/Profile";
 import Compose from "@/pages/Compose";
 import NotFound from "@/pages/NotFound";
 import DonationSuccess from "@/pages/DonationSuccess";
+import DonationHistory from "@/pages/DonationHistory";
 
-const queryClient = new QueryClient();
+// Import components
+import ProtectedRoute from "@/components/ProtectedRoute";
+import "./App.css";
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            {/* Public route */}
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/donation-success" element={<DonationSuccess />} />
-            
-            {/* Protected routes */}
-            <Route path="/" element={
-              <ProtectedRoute>
-                <Home />
-              </ProtectedRoute>
-            } />
-            <Route path="/explore" element={
-              <ProtectedRoute>
-                <Explore />
-              </ProtectedRoute>
-            } />
-            <Route path="/notifications" element={
-              <ProtectedRoute>
-                <Notifications />
-              </ProtectedRoute>
-            } />
-            <Route path="/messages" element={
-              <ProtectedRoute>
-                <Messages />
-              </ProtectedRoute>
-            } />
-            <Route path="/profile" element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            } />
-            <Route path="/compose" element={
-              <ProtectedRoute>
-                <Compose />
-              </ProtectedRoute>
-            } />
-            
-            {/* Fallback route */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+function App() {
+  const [theme, setTheme] = useState<"dark" | "light" | "system">("light");
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme") as "dark" | "light" | "system" | null;
+    if (savedTheme) {
+      setTheme(savedTheme);
+    }
+  }, []);
+
+  // Define routes
+  const router = createBrowserRouter([
+    {
+      path: "/",
+      element: <Index />,
+      errorElement: <NotFound />,
+      children: [
+        {
+          path: "/",
+          element: <Home />,
+        },
+        {
+          path: "/explore",
+          element: <Explore />,
+        },
+        {
+          path: "/notifications",
+          element: <Notifications />,
+        },
+        {
+          path: "/messages",
+          element: <ProtectedRoute><Messages /></ProtectedRoute>,
+        },
+        {
+          path: "/profile",
+          element: <ProtectedRoute><Profile /></ProtectedRoute>,
+        },
+        {
+          path: "/compose",
+          element: <ProtectedRoute><Compose /></ProtectedRoute>,
+        },
+        {
+          path: "/donation-history",
+          element: <ProtectedRoute><DonationHistory /></ProtectedRoute>,
+        },
+      ]
+    },
+    {
+      path: "/auth",
+      element: <Auth />,
+    },
+    {
+      path: "/donation-success",
+      element: <DonationSuccess />
+    }
+  ]);
+
+  return (
+    <ThemeProvider defaultTheme={theme} storageKey="theme">
+      <AuthProvider>
+        <RouterProvider router={router} />
+        <Toaster position="top-center" />
+      </AuthProvider>
+    </ThemeProvider>
+  );
+}
 
 export default App;

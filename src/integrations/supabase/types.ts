@@ -180,6 +180,9 @@ export type Database = {
           created_at: string | null
           id: string
           message: string | null
+          recipient_id: string | null
+          status: string | null
+          stripe_session_id: string | null
           user_id: string | null
         }
         Insert: {
@@ -187,6 +190,9 @@ export type Database = {
           created_at?: string | null
           id?: string
           message?: string | null
+          recipient_id?: string | null
+          status?: string | null
+          stripe_session_id?: string | null
           user_id?: string | null
         }
         Update: {
@@ -194,9 +200,19 @@ export type Database = {
           created_at?: string | null
           id?: string
           message?: string | null
+          recipient_id?: string | null
+          status?: string | null
+          stripe_session_id?: string | null
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "donations_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "donations_user_id_fkey"
             columns: ["user_id"]
@@ -537,6 +553,40 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      donations_history: {
+        Row: {
+          amount: number | null
+          created_at: string | null
+          donor_avatar: string | null
+          donor_id: string | null
+          donor_name: string | null
+          donor_username: string | null
+          id: string | null
+          message: string | null
+          recipient_avatar: string | null
+          recipient_id: string | null
+          recipient_name: string | null
+          recipient_username: string | null
+          status: string | null
+          stripe_session_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donations_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donations_user_id_fkey"
+            columns: ["donor_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       merch_item_details: {
         Row: {

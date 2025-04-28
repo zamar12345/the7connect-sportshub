@@ -14,8 +14,9 @@ serve(async (req) => {
   }
 
   try {
-    const { recipientId, amount } = await req.json();
+    const { recipientId, amount, message } = await req.json();
 
+    // Create Supabase client with anon key for user authentication
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? ""
@@ -27,10 +28,22 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
     if (authError || !user) throw new Error("Unauthorized");
 
+    // Get recipient information for the checkout description
+    const { data: recipient, error: recipientError } = await supabaseClient
+      .from("users")
+      .select("full_name, username")
+      .eq("id", recipientId)
+      .single();
+    
+    if (recipientError || !recipient) throw new Error("Invalid recipient");
+    
+    const recipientName = recipient.full_name || recipient.username || "an athlete";
+
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2023-10-16",
     });
 
+    // Create a checkout session for one-time payment
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
@@ -38,8 +51,8 @@ serve(async (req) => {
           price_data: {
             currency: "usd",
             product_data: {
-              name: "Donation",
-              description: "Support your favorite athlete",
+              name: "Donation to " + recipientName,
+              description: message ? `Message: ${message}` : `Support ${recipientName}`,
             },
             unit_amount: amount,
           },
@@ -52,7 +65,25 @@ serve(async (req) => {
       metadata: {
         recipientId,
         donorId: user.id,
+        message: message || "",
       },
+    });
+
+    // Create Supabase client with service role for database operations
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
+    );
+
+    // Record the donation in the database
+    await supabaseAdmin.from("donations").insert({
+      user_id: user.id,
+      recipient_id: recipientId,
+      amount: amount / 100, // Convert from cents to dollars for storage
+      message: message,
+      stripe_session_id: session.id,
+      status: "pending"
     });
 
     return new Response(JSON.stringify({ url: session.url }), {
@@ -60,6 +91,7 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error) {
+    console.error('Payment error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

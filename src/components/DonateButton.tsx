@@ -41,7 +41,11 @@ const DonateButton = ({ recipientId, recipientName }: { recipientId: string; rec
       
       // Call our Edge Function to create a Stripe checkout session
       const { data, error } = await supabase.functions.invoke('create-payment', {
-        body: { recipientId, amount: amountInCents }
+        body: { 
+          recipientId, 
+          amount: amountInCents,
+          message: message.trim() || undefined 
+        }
       });
       
       if (error) throw new Error(error.message);
