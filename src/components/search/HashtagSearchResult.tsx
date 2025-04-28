@@ -1,11 +1,11 @@
 
 import React from "react";
 import { Hash } from "lucide-react";
-import { HashtagSearchResult } from "@/services/search";
+import type { HashtagSearchResult as HashtagSearchResultType } from "@/services/search";
 
 interface HashtagSearchResultProps {
-  result: HashtagSearchResult;
-  onClick: (result: HashtagSearchResult) => void;
+  result: HashtagSearchResultType;
+  onClick: (result: HashtagSearchResultType) => void;
 }
 
 const HashtagSearchResult = ({ result, onClick }: HashtagSearchResultProps) => {

@@ -2,11 +2,11 @@
 import React from "react";
 import { Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { 
+import type { 
   SearchResult, 
-  UserSearchResult, 
-  PostSearchResult, 
-  HashtagSearchResult 
+  UserSearchResult as UserSearchResultType, 
+  PostSearchResult as PostSearchResultType, 
+  HashtagSearchResult as HashtagSearchResultType 
 } from "@/services/search";
 import { Button } from "@/components/ui/button";
 import UserSearchResult from "./UserSearchResult";
@@ -28,9 +28,9 @@ const SearchResults = ({
 }: SearchResultsProps) => {
   const navigate = useNavigate();
 
-  const userResults = results.filter(r => r.type === 'user') as UserSearchResult[];
-  const hashtagResults = results.filter(r => r.type === 'hashtag') as HashtagSearchResult[];
-  const postResults = results.filter(r => r.type === 'post') as PostSearchResult[];
+  const userResults = results.filter(r => r.type === 'user') as UserSearchResultType[];
+  const hashtagResults = results.filter(r => r.type === 'hashtag') as HashtagSearchResultType[];
+  const postResults = results.filter(r => r.type === 'post') as PostSearchResultType[];
   
   return (
     <div className="absolute mt-1 w-full bg-background border border-border rounded-md shadow-lg z-50 max-h-[70vh] overflow-y-auto">

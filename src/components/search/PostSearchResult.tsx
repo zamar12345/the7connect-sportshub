@@ -1,11 +1,11 @@
 
 import React from "react";
 import { MessageSquare } from "lucide-react";
-import { PostSearchResult } from "@/services/search";
+import type { PostSearchResult as PostSearchResultType } from "@/services/search";
 
 interface PostSearchResultProps {
-  result: PostSearchResult;
-  onClick: (result: PostSearchResult) => void;
+  result: PostSearchResultType;
+  onClick: (result: PostSearchResultType) => void;
 }
 
 const PostSearchResult = ({ result, onClick }: PostSearchResultProps) => {

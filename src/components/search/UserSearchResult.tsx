@@ -1,12 +1,12 @@
 
 import React from "react";
 import { User } from "lucide-react";
-import { UserSearchResult } from "@/services/search";
+import type { UserSearchResult as UserSearchResultType } from "@/services/search";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface UserSearchResultProps {
-  result: UserSearchResult;
-  onClick: (result: UserSearchResult) => void;
+  result: UserSearchResultType;
+  onClick: (result: UserSearchResultType) => void;
 }
 
 const UserSearchResult = ({ result, onClick }: UserSearchResultProps) => {
