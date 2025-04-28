@@ -47,7 +47,6 @@ const PostSearchResults = ({ posts, loading, searchQuery }: PostSearchResultsPro
                 id: post.user_id,
                 username: post.username,
                 avatar_url: post.avatar_url,
-                isVerified: false,
                 full_name: post.username
               },
               likes_count: post.likes_count || 0,
