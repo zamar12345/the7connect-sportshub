@@ -1,12 +1,10 @@
-
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthProvider";
+import { useUserProfile, useUpdateProfile } from "@/hooks/useProfile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import { User } from "lucide-react";
 
@@ -21,8 +19,6 @@ type ProfileData = {
 
 const ProfileEditor = ({ onClose }: { onClose: () => void }) => {
   const { user } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState<ProfileData>({
     username: "",
     full_name: "",
@@ -32,41 +28,22 @@ const ProfileEditor = ({ onClose }: { onClose: () => void }) => {
     disciplines: []
   });
   const [newDiscipline, setNewDiscipline] = useState("");
+  
+  const { data: profile, isLoading } = useUserProfile(user?.id);
+  const { uploadAvatar, isUploading, updateProfile, isUpdating } = useUpdateProfile();
 
-  // Fetch current profile data when component mounts
   useEffect(() => {
-    const fetchProfile = async () => {
-      if (!user) return;
-      
-      try {
-        setLoading(true);
-        const { data, error } = await supabase
-          .from("users")
-          .select("username, full_name, avatar_url, bio, sport, disciplines")
-          .eq("id", user.id)
-          .single();
-          
-        if (error) throw error;
-        
-        if (data) {
-          setFormData({
-            username: data.username || "",
-            full_name: data.full_name || "",
-            bio: data.bio || "",
-            avatar_url: data.avatar_url || "",
-            sport: data.sport || "",
-            disciplines: data.disciplines || []
-          });
-        }
-      } catch (error: any) {
-        toast.error(`Error loading profile: ${error.message}`);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchProfile();
-  }, [user]);
+    if (profile) {
+      setFormData({
+        username: profile.username || "",
+        full_name: profile.full_name || "",
+        bio: profile.bio || "",
+        avatar_url: profile.avatar_url || "",
+        sport: profile.sport || "",
+        disciplines: profile.disciplines || []
+      });
+    }
+  }, [profile]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -77,35 +54,11 @@ const ProfileEditor = ({ onClose }: { onClose: () => void }) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
     
-    try {
-      setUploading(true);
-      
-      // Generate a unique file path
-      const fileExt = file.name.split('.').pop();
-      const filePath = `avatars/${user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      
-      // Upload the file to Supabase storage
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file);
-        
-      if (uploadError) throw uploadError;
-      
-      // Get the public URL
-      const { data } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-        
-      // Update the avatar URL in the form data
-      if (data) {
-        setFormData(prev => ({ ...prev, avatar_url: data.publicUrl }));
-        toast.success("Avatar uploaded successfully!");
+    uploadAvatar({ file, userId: user.id }, {
+      onSuccess: (publicUrl) => {
+        setFormData(prev => ({ ...prev, avatar_url: publicUrl }));
       }
-    } catch (error: any) {
-      toast.error(`Error uploading avatar: ${error.message}`);
-    } finally {
-      setUploading(false);
-    }
+    });
   };
 
   const addDiscipline = () => {
@@ -135,33 +88,12 @@ const ProfileEditor = ({ onClose }: { onClose: () => void }) => {
     e.preventDefault();
     if (!user) return;
     
-    try {
-      setLoading(true);
-      
-      const { error } = await supabase
-        .from("users")
-        .update({
-          username: formData.username,
-          full_name: formData.full_name,
-          bio: formData.bio,
-          avatar_url: formData.avatar_url,
-          sport: formData.sport,
-          disciplines: formData.disciplines
-        })
-        .eq("id", user.id);
-        
-      if (error) throw error;
-      
-      toast.success("Profile updated successfully!");
-      onClose();
-    } catch (error: any) {
-      toast.error(`Error updating profile: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
+    updateProfile({ userId: user.id, profile: formData }, {
+      onSuccess: () => onClose()
+    });
   };
 
-  if (loading && !formData.username) {
+  if (isLoading && !formData.username) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -198,12 +130,12 @@ const ProfileEditor = ({ onClose }: { onClose: () => void }) => {
                   accept="image/*"
                   onChange={handleAvatarUpload}
                   className="hidden"
-                  disabled={uploading}
+                  disabled={isUploading}
                 />
               </Label>
             </div>
           </div>
-          {uploading && <p className="text-sm text-muted-foreground">Uploading...</p>}
+          {isUploading && <p className="text-sm text-muted-foreground">Uploading...</p>}
         </div>
         
         <div className="space-y-2">
@@ -288,8 +220,8 @@ const ProfileEditor = ({ onClose }: { onClose: () => void }) => {
           <Button type="button" variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" disabled={loading}>
-            {loading ? "Saving..." : "Save Profile"}
+          <Button type="submit" disabled={isUpdating}>
+            {isUpdating ? "Saving..." : "Save Profile"}
           </Button>
         </div>
       </form>

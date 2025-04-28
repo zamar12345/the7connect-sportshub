@@ -1,14 +1,14 @@
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ArrowLeft, Send } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import DonateButton from "@/components/DonateButton";
-import { Conversation, Message } from "@/types/messages";
+import { Conversation } from "@/types/messages";
 import MessageBubble from "./MessageBubble";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { useMessageQuery, useSendMessage } from "@/hooks/useMessages";
+import { useEffect } from "react";
 
 type ConversationViewProps = {
   conversation: Conversation;
@@ -17,39 +17,17 @@ type ConversationViewProps = {
 };
 
 const ConversationView = ({ conversation, currentUserId, onBack }: ConversationViewProps) => {
-  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
-  const [sendingMessage, setSendingMessage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    fetchMessages();
-    markMessagesAsRead();
-    
-    const channel = supabase
-      .channel(`conversation:${conversation.id}`)
-      .on('postgres_changes', 
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'direct_messages',
-          filter: `conversation_id=eq.${conversation.id}`
-        }, 
-        (payload) => {
-          const newMessage = payload.new as Message;
-          setMessages(prevMessages => [...prevMessages, newMessage]);
-          
-          if (newMessage.sender_id !== currentUserId) {
-            markMessagesAsRead();
-          }
-        }
-      )
-      .subscribe();
-      
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [conversation.id, currentUserId]);
+  
+  // Fetch messages with React Query and real-time updates
+  const { 
+    data: messages = [],
+    isLoading
+  } = useMessageQuery(conversation.id);
+  
+  // Send message mutation
+  const sendMessageMutation = useSendMessage(conversation.id, currentUserId);
 
   useEffect(() => {
     scrollToBottom();
@@ -59,91 +37,14 @@ const ConversationView = ({ conversation, currentUserId, onBack }: ConversationV
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const fetchMessages = async () => {
-    try {
-      const { data: messagesData, error } = await supabase
-        .from('direct_messages')
-        .select('*')
-        .eq('conversation_id', conversation.id)
-        .order('created_at', { ascending: true });
-      
-      if (error) throw error;
-      
-      if (messagesData && messagesData.length > 0) {
-        setMessages(messagesData);
-      } else {
-        const mockMessages = [
-          {
-            id: "msg-1",
-            content: "Hi there! How are you doing?",
-            sender_id: conversation.user.id,
-            created_at: new Date(Date.now() - 3600000).toISOString(),
-            is_read: true
-          },
-          {
-            id: "msg-2",
-            content: "I'm doing great! Just finished training. How about you?",
-            sender_id: currentUserId,
-            created_at: new Date(Date.now() - 3500000).toISOString(),
-            is_read: true
-          },
-          {
-            id: "msg-3",
-            content: "Getting ready for the tournament next weekend. Are you coming?",
-            sender_id: conversation.user.id,
-            created_at: new Date(Date.now() - 3400000).toISOString(),
-            is_read: true
-          }
-        ];
-        
-        setMessages(mockMessages);
-      }
-    } catch (error: any) {
-      toast.error("Failed to load messages: " + error.message);
-    }
-  };
-
-  const markMessagesAsRead = async () => {
-    try {
-      const { error } = await supabase.rpc('mark_messages_as_read', {
-        conversation_id_param: conversation.id
-      });
-      
-      if (error) throw error;
-    } catch (error: any) {
-      console.error("Error marking messages as read:", error);
-    }
-  };
-
   const sendMessage = async () => {
     if (!newMessage.trim()) return;
     
-    try {
-      setSendingMessage(true);
-      
-      const { data, error } = await supabase
-        .from('direct_messages')
-        .insert({
-          content: newMessage,
-          sender_id: currentUserId,
-          conversation_id: conversation.id,
-          is_read: false
-        })
-        .select();
-      
-      if (error) throw error;
-      
-      if (data) {
-        const newMsg = data[0];
-        setMessages(prevMessages => [...prevMessages, newMsg]);
+    sendMessageMutation.mutate(newMessage, {
+      onSuccess: () => {
+        setNewMessage("");
       }
-      
-      setNewMessage("");
-    } catch (error: any) {
-      toast.error("Failed to send message: " + error.message);
-    } finally {
-      setSendingMessage(false);
-    }
+    });
   };
 
   return (
@@ -154,7 +55,7 @@ const ConversationView = ({ conversation, currentUserId, onBack }: ConversationV
         </Button>
         <Avatar className="h-10 w-10">
           <AvatarImage src={conversation.user.avatar} alt={conversation.user.name} />
-          <AvatarFallback>{conversation.user.name[0]}</AvatarFallback>
+          <AvatarFallback>{conversation.user.name?.[0]}</AvatarFallback>
         </Avatar>
         <div className="ml-3 flex-1">
           <div className="flex justify-between items-center">
@@ -173,13 +74,23 @@ const ConversationView = ({ conversation, currentUserId, onBack }: ConversationV
       </div>
       
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
-          <MessageBubble 
-            key={message.id} 
-            message={message} 
-            isCurrentUser={message.sender_id === currentUserId} 
-          />
-        ))}
+        {isLoading ? (
+          <div className="flex justify-center items-center h-full">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+          </div>
+        ) : messages.length > 0 ? (
+          messages.map((message) => (
+            <MessageBubble 
+              key={message.id} 
+              message={message} 
+              isCurrentUser={message.sender_id === currentUserId} 
+            />
+          ))
+        ) : (
+          <div className="flex justify-center items-center h-full">
+            <p className="text-muted-foreground">No messages yet. Start a conversation!</p>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
       
@@ -203,9 +114,10 @@ const ConversationView = ({ conversation, currentUserId, onBack }: ConversationV
           <Button 
             type="submit" 
             className="self-end"
-            disabled={sendingMessage || !newMessage.trim()}
+            disabled={sendMessageMutation.isPending || !newMessage.trim()}
           >
-            <Send size={18} className="mr-2" /> Send
+            <Send size={18} className="mr-2" /> 
+            {sendMessageMutation.isPending ? "Sending..." : "Send"}
           </Button>
         </form>
       </div>

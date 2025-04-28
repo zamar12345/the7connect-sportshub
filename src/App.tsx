@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/context/AuthProvider";
+import { QueryProvider } from "@/context/QueryProvider";
 import { Toaster } from "sonner";
 
 // Import all pages
@@ -93,10 +94,12 @@ function App() {
 
   return (
     <ThemeProvider defaultTheme={theme} storageKey="theme">
-      <AuthProvider>
-        <RouterProvider router={router} />
-        <Toaster position="top-center" />
-      </AuthProvider>
+      <QueryProvider>
+        <AuthProvider>
+          <RouterProvider router={router} />
+          <Toaster position="top-center" />
+        </AuthProvider>
+      </QueryProvider>
     </ThemeProvider>
   );
 }

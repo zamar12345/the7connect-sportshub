@@ -1,57 +1,39 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import PostCard from "@/components/PostCard";
 import StoriesRow from "@/components/StoriesRow";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { fetchPosts } from "@/services/postService";
-import { fetchFollowingPosts } from "@/services/followService";
+import { usePostsQuery, useFollowingPostsQuery } from "@/hooks/usePostsQuery";
 import { useAuth } from "@/context/AuthProvider";
-import { toast } from "sonner";
 
 const Home = () => {
   const [activeTab, setActiveTab] = useState("forYou");
-  const [forYouPosts, setForYouPosts] = useState([]);
-  const [followingPosts, setFollowingPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   
-  useEffect(() => {
-    const getForYouPosts = async () => {
-      try {
-        setLoading(true);
-        const postsData = await fetchPosts();
-        setForYouPosts(postsData);
-      } catch (error: any) {
-        console.error("Error fetching posts:", error);
-        toast.error(`Error loading posts: ${error.message}`);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    getForYouPosts();
-  }, []);
+  // Fetch "For You" posts
+  const { 
+    data: forYouPosts = [], 
+    isLoading: isLoadingForYou 
+  } = usePostsQuery();
   
-  useEffect(() => {
-    // Only fetch following posts if user is logged in and the following tab is active
-    if (user && activeTab === "following") {
-      const getFollowingPosts = async () => {
-        try {
-          setLoading(true);
-          const postsData = await fetchFollowingPosts();
-          setFollowingPosts(postsData);
-        } catch (error: any) {
-          console.error("Error fetching following posts:", error);
-          toast.error(`Error loading following feed: ${error.message}`);
-        } finally {
-          setLoading(false);
-        }
-      };
-      
-      getFollowingPosts();
+  // Fetch "Following" posts
+  const {
+    data: followingPosts = [],
+    isLoading: isLoadingFollowing,
+    refetch: refetchFollowingPosts
+  } = useFollowingPostsQuery({
+    enabled: !!user // Only fetch if user is logged in
+  });
+  
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    
+    // Fetch following posts if changing to that tab and we have a user
+    if (value === "following" && user) {
+      refetchFollowingPosts();
     }
-  }, [user, activeTab]);
+  };
   
   return (
     <MobileLayout>
@@ -61,7 +43,7 @@ const Home = () => {
         <div className="px-1">
           <Tabs 
             defaultValue="forYou" 
-            onValueChange={setActiveTab} 
+            onValueChange={handleTabChange} 
             className="w-full"
           >
             <div className="border-b border-border sticky top-14 bg-background/80 backdrop-blur-md z-10">
@@ -82,7 +64,7 @@ const Home = () => {
             </div>
             
             <TabsContent value="forYou" className="pt-1 mt-0">
-              {loading ? (
+              {isLoadingForYou ? (
                 <div className="flex flex-col items-center justify-center p-8">
                   <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
                   <p className="text-muted-foreground">Loading posts...</p>
@@ -111,7 +93,7 @@ const Home = () => {
                     Create an account or sign in to view your personalized feed.
                   </p>
                 </div>
-              ) : loading ? (
+              ) : isLoadingFollowing ? (
                 <div className="flex flex-col items-center justify-center p-8">
                   <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
                   <p className="text-muted-foreground">Loading posts...</p>

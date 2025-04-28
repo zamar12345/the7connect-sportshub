@@ -1,25 +1,11 @@
 
-import { useState, useEffect } from "react";
-import { fetchComments, addComment } from "@/services/postService";
+import { useState } from "react";
 import { useAuth } from "@/context/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useCommentsQuery, useAddCommentMutation } from "@/hooks/useComments";
 import { toast } from "sonner";
-
-interface CommentUser {
-  id: string;
-  username: string;
-  full_name: string;
-  avatar_url?: string;
-}
-
-interface Comment {
-  id: string;
-  content: string;
-  created_at: string;
-  user: CommentUser;
-}
 
 interface CommentSectionProps {
   postId: string;
@@ -27,27 +13,14 @@ interface CommentSectionProps {
 
 const CommentSection = ({ postId }: CommentSectionProps) => {
   const { user } = useAuth();
-  const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [loading, setLoading] = useState(true);
   
-  useEffect(() => {
-    const getComments = async () => {
-      try {
-        setLoading(true);
-        const commentsData = await fetchComments(postId);
-        setComments(commentsData);
-      } catch (error: any) {
-        console.error("Error fetching comments:", error);
-        toast.error(`Error loading comments: ${error.message}`);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    getComments();
-  }, [postId]);
+  const { 
+    data: comments = [], 
+    isLoading 
+  } = useCommentsQuery(postId);
+  
+  const addCommentMutation = useAddCommentMutation(postId);
   
   const handleSubmitComment = async () => {
     if (!user) {
@@ -57,22 +30,11 @@ const CommentSection = ({ postId }: CommentSectionProps) => {
     
     if (newComment.trim() === "") return;
     
-    try {
-      setIsSubmitting(true);
-      await addComment(postId, newComment);
-      
-      // Refresh comments after posting
-      const commentsData = await fetchComments(postId);
-      setComments(commentsData);
-      
-      setNewComment("");
-      toast.success("Comment added");
-    } catch (error: any) {
-      console.error("Error posting comment:", error);
-      toast.error(`Error posting comment: ${error.message}`);
-    } finally {
-      setIsSubmitting(false);
-    }
+    addCommentMutation.mutate(newComment, {
+      onSuccess: () => {
+        setNewComment("");
+      }
+    });
   };
   
   const formatTimestamp = (timestamp: string) => {
@@ -95,17 +57,17 @@ const CommentSection = ({ postId }: CommentSectionProps) => {
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             className="w-full resize-none"
-            disabled={!user || isSubmitting}
+            disabled={!user || addCommentMutation.isPending}
           />
           
           <div className="flex justify-end mt-2">
             <Button
               onClick={handleSubmitComment}
-              disabled={newComment.trim() === "" || !user || isSubmitting}
+              disabled={newComment.trim() === "" || !user || addCommentMutation.isPending}
               className="bg-sport-blue hover:bg-sport-blue/90"
               size="sm"
             >
-              {isSubmitting ? "Posting..." : "Post Comment"}
+              {addCommentMutation.isPending ? "Posting..." : "Post Comment"}
             </Button>
           </div>
         </div>
@@ -113,7 +75,7 @@ const CommentSection = ({ postId }: CommentSectionProps) => {
       
       {/* Comments list */}
       <div className="space-y-4 pt-2">
-        {loading ? (
+        {isLoading ? (
           <div className="text-center py-4">
             <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary mx-auto"></div>
             <p className="text-sm text-muted-foreground mt-2">Loading comments...</p>

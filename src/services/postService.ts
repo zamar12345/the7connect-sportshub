@@ -1,44 +1,57 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 interface FetchPostsOptions {
   userId?: string;
   limit?: number;
   offset?: number;
+  following?: boolean;
 }
 
 // Fetch posts with user details and interaction counts
-export const fetchPosts = async (options?: FetchPostsOptions) => {
-  let query = supabase
-    .from('posts')
-    .select(`
-      *,
-      likes_count,
-      comments_count,
-      user:users(id, username, full_name, avatar_url)
-    `)
-    .order('created_at', { ascending: false });
+export const fetchPosts = async (options: FetchPostsOptions = {}) => {
+  try {
+    let query = supabase
+      .from('posts')
+      .select(`
+        *,
+        user:users(id, username, full_name, avatar_url)
+      `)
+      .order('created_at', { ascending: false });
+      
+    // Add filters based on options
+    if (options.userId) {
+      query = query.eq('user_id', options.userId);
+    }
     
-  // Add filters based on options
-  if (options?.userId) {
-    query = query.eq('user_id', options.userId);
-  }
-  
-  if (options?.limit) {
-    query = query.limit(options.limit);
-  }
-  
-  if (options?.offset) {
-    query = query.range(options.offset, options.offset + (options.limit || 10) - 1);
-  }
-  
-  const { data, error } = await query;
+    if (options.limit) {
+      query = query.limit(options.limit);
+    }
     
-  if (error) {
+    if (options.offset) {
+      query = query.range(options.offset, options.offset + (options.limit || 10) - 1);
+    }
+
+    // If fetching following posts, route to the specialized service
+    if (options.following) {
+      return fetchFollowingPosts();
+    }
+    
+    const { data, error } = await query;
+      
+    if (error) {
+      throw error;
+    }
+
+    // Map the response to match our Post type
+    return data.map(post => ({
+      ...post,
+      likes_count: post.likes_count || 0,
+      comments_count: post.comments_count || 0
+    }));
+  } catch (error) {
+    console.error("Error fetching posts:", error);
     throw error;
   }
-  
-  return data;
 };
 
 // Check if the current user has liked a post

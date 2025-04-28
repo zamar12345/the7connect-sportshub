@@ -4,19 +4,19 @@ import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { Conversation } from "@/types/messages";
 import ConversationListItem from "./ConversationListItem";
+import { useConversationsList } from "@/hooks/useMessages";
 
 type ConversationListProps = {
-  conversations: Conversation[];
-  loading: boolean;
   onSelectConversation: (conversation: Conversation) => void;
 };
 
-const ConversationList = ({ conversations, loading, onSelectConversation }: ConversationListProps) => {
+const ConversationList = ({ onSelectConversation }: ConversationListProps) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const { data: conversations = [], isLoading } = useConversationsList();
 
   const filteredConversations = searchQuery 
     ? conversations.filter(conv => 
-        conv.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        conv.user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (conv.user.username && conv.user.username.toLowerCase().includes(searchQuery.toLowerCase()))
       )
     : conversations;
@@ -37,7 +37,7 @@ const ConversationList = ({ conversations, loading, onSelectConversation }: Conv
       </div>
       
       <div className="flex-1 overflow-y-auto">
-        {loading ? (
+        {isLoading ? (
           <div className="flex justify-center items-center h-40">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
           </div>
