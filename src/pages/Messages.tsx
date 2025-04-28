@@ -109,27 +109,48 @@ const Messages = () => {
       
       if (recentConversations) {
         const formattedConversations = recentConversations.map(conv => {
-          const participantsArray = Array.isArray(conv.participants) 
-            ? conv.participants 
-            : typeof conv.participants === 'object' && conv.participants !== null
-              ? [conv.participants]
-              : [];
+          let participantsList: ConversationParticipant[] = [];
           
-          const typedParticipants: ConversationParticipant[] = [];
-          
-          for (const participant of participantsArray) {
-            if (typeof participant === 'object' && participant !== null) {
-              typedParticipants.push({
-                id: String(participant.id || ''),
-                full_name: typeof participant.full_name === 'string' ? participant.full_name : null,
-                avatar_url: typeof participant.avatar_url === 'string' ? participant.avatar_url : null,
-                username: typeof participant.username === 'string' ? participant.username : null
-              });
+          if (conv.participants) {
+            try {
+              if (Array.isArray(conv.participants)) {
+                participantsList = conv.participants.map(p => {
+                  if (typeof p === 'object' && p !== null) {
+                    return {
+                      id: String(p.id || ''),
+                      full_name: typeof p.full_name === 'string' ? p.full_name : null,
+                      avatar_url: typeof p.avatar_url === 'string' ? p.avatar_url : null,
+                      username: typeof p.username === 'string' ? p.username : null
+                    };
+                  }
+                  return {
+                    id: 'unknown',
+                    full_name: null,
+                    avatar_url: null,
+                    username: null
+                  };
+                });
+              } else if (typeof conv.participants === 'object' && conv.participants !== null) {
+                const p = conv.participants;
+                participantsList = [{
+                  id: String(p.id || ''),
+                  full_name: typeof p.full_name === 'string' ? p.full_name : null,
+                  avatar_url: typeof p.avatar_url === 'string' ? p.avatar_url : null,
+                  username: typeof p.username === 'string' ? p.username : null
+                }];
+              }
+            } catch (e) {
+              console.error("Error processing participants:", e);
+              participantsList = [];
             }
           }
           
-          const otherParticipant = typedParticipants.find(p => p.id !== user?.id) || 
-            { id: 'unknown', full_name: 'Unknown User', avatar_url: null, username: null };
+          const otherParticipant = participantsList.find(p => p.id !== user?.id) || {
+            id: 'unknown',
+            full_name: 'Unknown User',
+            avatar_url: null,
+            username: null
+          };
           
           return {
             id: conv.id,
