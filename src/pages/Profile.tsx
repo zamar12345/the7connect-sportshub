@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PostCard from "@/components/PostCard";
 import { CreditCard, Award, Settings, Heart, Trophy, Medal } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import DonateButton from "@/components/DonateButton";
 
 const Profile = () => {
   const [activeTab, setActiveTab] = useState("posts");
@@ -40,6 +41,9 @@ const Profile = () => {
           </div>
           
           <div className="absolute bottom-0 right-4 transform translate-y-1/2 flex space-x-2">
+            {user.id !== currentUser.id && (
+              <DonateButton recipientId={user.id} recipientName={user.name} />
+            )}
             <Button variant="outline" size="sm" className="rounded-full">
               <Settings size={16} className="mr-1" />
               Edit

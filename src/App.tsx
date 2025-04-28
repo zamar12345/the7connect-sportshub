@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,6 +10,7 @@ import Messages from "./pages/Messages";
 import Profile from "./pages/Profile";
 import Compose from "./pages/Compose";
 import NotFound from "./pages/NotFound";
+import DonationSuccess from "./pages/DonationSuccess";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +27,7 @@ const App = () => (
           <Route path="/messages" element={<Messages />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/compose" element={<Compose />} />
+          <Route path="/donation-success" element={<DonationSuccess />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
