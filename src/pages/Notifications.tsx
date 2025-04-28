@@ -1,10 +1,11 @@
+
 import { useState, useEffect } from "react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MessageSquare, Heart, Repeat2, UserPlus, CreditCard, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthProvider";
-import { fetchNotifications, markAllNotificationsAsRead } from "@/services/notificationService";
+import { fetchNotifications, markAllNotificationsAsRead, markNotificationAsRead } from "@/services/notificationService";
 import { toggleFollow } from "@/services/followService";
 import { toast } from "sonner";
 
@@ -58,6 +59,21 @@ const Notifications = () => {
       toast.success("All notifications marked as read");
     } catch (error) {
       console.error("Error marking notifications as read:", error);
+    }
+  };
+  
+  const handleMarkAsRead = async (notificationId: string) => {
+    try {
+      await markNotificationAsRead(notificationId);
+      setNotifications(prev => 
+        prev.map(notification => 
+          notification.id === notificationId 
+            ? { ...notification, is_read: true } 
+            : notification
+        )
+      );
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
     }
   };
 
@@ -140,6 +156,7 @@ const Notifications = () => {
               <div 
                 key={notification.id} 
                 className={`p-4 border-b border-border flex ${notification.is_read ? "" : "bg-primary/5"}`}
+                onClick={() => !notification.is_read && handleMarkAsRead(notification.id)}
               >
                 <Avatar className="h-10 w-10 mr-3">
                   {notification.actor?.avatar_url ? (

@@ -1,31 +1,31 @@
 
 import { useState } from "react";
 import MobileLayout from "@/components/layout/MobileLayout";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mockTrendingTopics, mockUsers, mockPosts } from "@/data/mockData";
-import { Search } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import PostCard from "@/components/PostCard";
+import SearchBar from "@/components/SearchBar";
+import { useLocation } from "react-router-dom";
+import FollowButton from "@/components/FollowButton";
 
 const Explore = () => {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState("trending");
+  const location = useLocation();
+  
+  // Get query from URL if it exists
+  const queryParams = new URLSearchParams(location.search);
+  const searchQuery = queryParams.get("q") || "";
   
   return (
     <MobileLayout>
       <div className="p-4">
-        <div className="relative mb-4">
-          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input 
-            placeholder="Search athletes, topics, or keywords" 
-            className="pl-10 bg-muted" 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        <div className="mb-4">
+          <SearchBar placeholder="Search athletes, topics, or keywords" />
         </div>
         
-        <Tabs defaultValue="trending" className="w-full">
+        <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="w-full mb-4">
             <TabsTrigger value="trending" className="flex-1">Trending</TabsTrigger>
             <TabsTrigger value="discover" className="flex-1">Discover</TabsTrigger>
@@ -80,7 +80,7 @@ const Explore = () => {
                         <p className="text-xs text-muted-foreground">{user.sport}</p>
                       </div>
                     </div>
-                    <Button size="sm" variant="outline">Follow</Button>
+                    <FollowButton userId={user.id} />
                   </div>
                 ))}
               </div>

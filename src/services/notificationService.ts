@@ -42,7 +42,7 @@ export const fetchNotifications = async () => {
             if (actor) {
               return {
                 ...notification,
-                actor: actor
+                actor
               };
             }
           }
@@ -111,5 +111,60 @@ export const getUnreadNotificationsCount = async () => {
   } catch (error) {
     console.error("Error counting unread notifications:", error);
     return 0;
+  }
+};
+
+// Register for push notifications
+export const registerForPushNotifications = async (subscription: PushSubscription) => {
+  try {
+    const userId = (await supabase.auth.getSession()).data.session?.user.id;
+    
+    if (!userId) {
+      throw new Error('User is not authenticated');
+    }
+    
+    // Store the push subscription in the database
+    const { error } = await supabase
+      .from('push_subscriptions')
+      .upsert({
+        user_id: userId,
+        endpoint: subscription.endpoint,
+        p256dh: JSON.stringify(subscription.toJSON().keys?.p256dh),
+        auth: JSON.stringify(subscription.toJSON().keys?.auth),
+        created_at: new Date().toISOString()
+      });
+    
+    if (error) throw error;
+    
+    return true;
+  } catch (error: any) {
+    console.error("Error registering for push notifications:", error);
+    toast.error(`Error: ${error.message}`);
+    return false;
+  }
+};
+
+// Unregister from push notifications
+export const unregisterFromPushNotifications = async () => {
+  try {
+    const userId = (await supabase.auth.getSession()).data.session?.user.id;
+    
+    if (!userId) {
+      throw new Error('User is not authenticated');
+    }
+    
+    // Remove the push subscription from the database
+    const { error } = await supabase
+      .from('push_subscriptions')
+      .delete()
+      .eq('user_id', userId);
+    
+    if (error) throw error;
+    
+    return true;
+  } catch (error: any) {
+    console.error("Error unregistering from push notifications:", error);
+    toast.error(`Error: ${error.message}`);
+    return false;
   }
 };
