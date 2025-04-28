@@ -1,14 +1,35 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import PostCard from "@/components/PostCard";
 import StoriesRow from "@/components/StoriesRow";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { mockPosts } from "@/data/mockData";
+import { fetchPosts } from "@/services/postService";
+import { useAuth } from "@/context/AuthProvider";
+import { toast } from "sonner";
 
 const Home = () => {
   const [activeTab, setActiveTab] = useState("forYou");
-  const [posts, setPosts] = useState(mockPosts);
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  
+  useEffect(() => {
+    const getPosts = async () => {
+      try {
+        setLoading(true);
+        const postsData = await fetchPosts();
+        setPosts(postsData);
+      } catch (error: any) {
+        console.error("Error fetching posts:", error);
+        toast.error(`Error loading posts: ${error.message}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    getPosts();
+  }, []);
   
   return (
     <MobileLayout>
@@ -39,18 +60,33 @@ const Home = () => {
             </div>
             
             <TabsContent value="forYou" className="pt-1 mt-0">
-              <div className="divide-y divide-border">
-                {posts.map((post) => (
-                  <PostCard key={post.id} post={post} />
-                ))}
-              </div>
+              {loading ? (
+                <div className="flex flex-col items-center justify-center p-8">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
+                  <p className="text-muted-foreground">Loading posts...</p>
+                </div>
+              ) : posts.length > 0 ? (
+                <div className="divide-y divide-border">
+                  {posts.map((post) => (
+                    <PostCard key={post.id} post={post} />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center p-8">
+                  <p className="text-lg font-medium mb-2">No posts yet</p>
+                  <p className="text-muted-foreground text-center">
+                    {user ? "Be the first to create a post!" : "Sign in to see and create posts!"}
+                  </p>
+                </div>
+              )}
             </TabsContent>
             
             <TabsContent value="following" className="pt-1 mt-0">
-              <div className="divide-y divide-border">
-                {posts.filter((_, i) => i % 2 === 0).map((post) => (
-                  <PostCard key={post.id} post={post} />
-                ))}
+              <div className="flex flex-col items-center justify-center p-8">
+                <p className="text-lg font-medium mb-2">Coming Soon</p>
+                <p className="text-muted-foreground text-center">
+                  The Following feed will be available soon.
+                </p>
               </div>
             </TabsContent>
           </Tabs>

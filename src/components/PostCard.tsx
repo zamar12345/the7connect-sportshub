@@ -1,63 +1,144 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Heart, MessageSquare, Repeat2, Share } from "lucide-react";
-import { Post } from "@/data/mockData";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthProvider";
+import { likePost, checkPostLikedStatus } from "@/services/postService";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import CommentSection from "@/components/CommentSection";
+
+interface PostUser {
+  id: string;
+  username: string;
+  full_name: string;
+  avatar_url?: string;
+}
 
 interface PostCardProps {
-  post: Post;
+  post: {
+    id: string;
+    content: string;
+    created_at: string;
+    user: PostUser;
+    hashtags?: string[];
+    images?: string[];
+    likes_count?: number;
+    comments_count?: number;
+  };
 }
 
 const PostCard = ({ post }: PostCardProps) => {
-  const [liked, setLiked] = useState(post.liked || false);
-  const [likeCount, setLikeCount] = useState(post.likes);
-  const [reposted, setReposted] = useState(post.reposted || false);
-  const [repostCount, setRepostCount] = useState(post.reposts);
-
-  const handleLike = () => {
-    if (liked) {
-      setLikeCount(prev => prev - 1);
-    } else {
-      setLikeCount(prev => prev + 1);
-    }
-    setLiked(!liked);
+  const { user } = useAuth();
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(post.likes_count || 0);
+  const [reposted, setReposted] = useState(false);
+  const [repostCount, setRepostCount] = useState(0);
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  
+  useEffect(() => {
+    // Check if the current user has liked this post
+    const checkLiked = async () => {
+      if (user) {
+        try {
+          const isLiked = await checkPostLikedStatus(post.id);
+          setLiked(isLiked);
+        } catch (error) {
+          console.error("Error checking like status:", error);
+        }
+      }
+    };
+    
+    checkLiked();
+  }, [post.id, user]);
+  
+  // Format timestamp to a readable format
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHour = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHour / 24);
+    
+    if (diffSec < 60) return `${diffSec}s`;
+    if (diffMin < 60) return `${diffMin}m`;
+    if (diffHour < 24) return `${diffHour}h`;
+    if (diffDay < 7) return `${diffDay}d`;
+    
+    return date.toLocaleDateString();
   };
-
+  
+  const handleLike = async () => {
+    if (!user) {
+      toast.error("You must be logged in to like posts");
+      return;
+    }
+    
+    try {
+      const isNowLiked = await likePost(post.id);
+      setLiked(isNowLiked);
+      setLikeCount(prev => isNowLiked ? prev + 1 : prev - 1);
+    } catch (error: any) {
+      console.error("Error liking post:", error);
+      toast.error(`Error: ${error.message}`);
+    }
+  };
+  
   const handleRepost = () => {
+    if (!user) {
+      toast.error("You must be logged in to repost");
+      return;
+    }
+    
     if (reposted) {
       setRepostCount(prev => prev - 1);
     } else {
       setRepostCount(prev => prev + 1);
+      toast.success("Post reposted to your profile");
     }
     setReposted(!reposted);
+  };
+  
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: `Post by ${post.user.username}`,
+        text: post.content,
+        url: window.location.href,
+      }).catch(error => {
+        console.error("Error sharing:", error);
+        toast.error("Couldn't share the post");
+      });
+    } else {
+      toast.info("Sharing not supported on this device");
+    }
   };
 
   return (
     <div className="border-b border-border p-4">
       <div className="flex space-x-3">
         <Avatar className="w-10 h-10">
-          <AvatarImage src={post.user.avatar} alt={post.user.name} />
-          <AvatarFallback>{post.user.name[0]}</AvatarFallback>
+          <AvatarImage src={post.user.avatar_url} alt={post.user.full_name} />
+          <AvatarFallback>{post.user.full_name?.[0] || post.user.username?.[0]}</AvatarFallback>
         </Avatar>
         
         <div className="flex-1 min-w-0">
           <div className="flex items-center">
             <p className="font-semibold text-foreground truncate mr-1.5">
-              {post.user.name}
+              {post.user.full_name || post.user.username}
             </p>
-            {post.user.isVerified && (
-              <span className="text-primary">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" 
-                    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </span>
-            )}
             <p className="text-muted-foreground text-sm truncate ml-1">
-              @{post.user.username} · {post.timestamp}
+              @{post.user.username} · {formatTimestamp(post.created_at)}
             </p>
           </div>
           
@@ -95,9 +176,14 @@ const PostCard = ({ post }: PostCardProps) => {
               {likeCount > 0 && <span className="text-xs">{likeCount}</span>}
             </Button>
             
-            <Button variant="ghost" size="sm" className="gap-1 px-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="gap-1 px-2"
+              onClick={() => setCommentsOpen(true)}
+            >
               <MessageSquare size={18} />
-              {post.comments > 0 && <span className="text-xs">{post.comments}</span>}
+              {post.comments_count > 0 && <span className="text-xs">{post.comments_count}</span>}
             </Button>
             
             <Button 
@@ -110,12 +196,26 @@ const PostCard = ({ post }: PostCardProps) => {
               {repostCount > 0 && <span className="text-xs">{repostCount}</span>}
             </Button>
             
-            <Button variant="ghost" size="sm" className="px-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="px-2"
+              onClick={handleShare}
+            >
               <Share size={18} />
             </Button>
           </div>
         </div>
       </div>
+      
+      <Dialog open={commentsOpen} onOpenChange={setCommentsOpen}>
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Comments</DialogTitle>
+          </DialogHeader>
+          <CommentSection postId={post.id} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

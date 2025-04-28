@@ -4,29 +4,59 @@ import { useNavigate } from "react-router-dom";
 import { X, Image, Video, MapPin, Smile, ArrowLeft } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { currentUser } from "@/data/mockData";
 import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/context/AuthProvider";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const Compose = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [content, setContent] = useState("");
   const [isPosting, setIsPosting] = useState(false);
   const charLimit = 280;
   const charsRemaining = charLimit - content.length;
+
+  // Extract hashtags from content
+  const extractHashtags = (text: string) => {
+    const hashtagRegex = /#(\w+)/g;
+    const hashtags = [];
+    let match;
+    
+    while ((match = hashtagRegex.exec(text)) !== null) {
+      hashtags.push(match[1]);
+    }
+    
+    return hashtags;
+  };
   
   const handlePost = async () => {
-    if (content.trim() === "") return;
+    if (content.trim() === "" || !user) return;
     
     setIsPosting(true);
     
-    // Simulate post creation
-    setTimeout(() => {
-      setIsPosting(false);
-      navigate("/");
+    const hashtags = extractHashtags(content);
+    
+    try {
+      const { data, error } = await supabase
+        .from('posts')
+        .insert({
+          content,
+          user_id: user.id,
+          hashtags
+        })
+        .select();
+        
+      if (error) throw error;
       
-      // This would be replaced with actual toast from the UI
-      console.log("Post created successfully!");
-    }, 1000);
+      toast.success("Post created successfully!");
+      navigate("/");
+    } catch (error: any) {
+      console.error("Error creating post:", error);
+      toast.error(`Error creating post: ${error.message}`);
+    } finally {
+      setIsPosting(false);
+    }
   };
   
   return (
@@ -52,8 +82,8 @@ const Compose = () => {
       
       <div className="flex p-4 pb-16 flex-1">
         <Avatar className="h-10 w-10 mt-1">
-          <AvatarImage src={currentUser.avatar} />
-          <AvatarFallback>{currentUser.name[0]}</AvatarFallback>
+          <AvatarImage src={user?.user_metadata?.avatar_url} />
+          <AvatarFallback>{user?.user_metadata?.full_name?.[0] || user?.email?.[0]}</AvatarFallback>
         </Avatar>
         
         <div className="ml-3 flex-1">
