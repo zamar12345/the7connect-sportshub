@@ -11,6 +11,12 @@ export function useRealtimeMessages(conversationId: string) {
   useEffect(() => {
     if (!conversationId) return;
 
+    // Get the current user ID
+    const getCurrentUserId = async () => {
+      const { data } = await supabase.auth.getUser();
+      return data.user?.id;
+    };
+
     const channel = supabase
       .channel(`conversation:${conversationId}`)
       .on('postgres_changes', 
@@ -20,7 +26,7 @@ export function useRealtimeMessages(conversationId: string) {
           table: 'direct_messages',
           filter: `conversation_id=eq.${conversationId}`
         }, 
-        (payload) => {
+        async (payload) => {
           // Update messages cache
           const newMessage = payload.new as Message;
           
@@ -29,7 +35,8 @@ export function useRealtimeMessages(conversationId: string) {
           });
           
           // Mark as read if it's not from current user
-          if (newMessage.sender_id !== supabase.auth.getUser()?.data?.user?.id) {
+          const currentUserId = await getCurrentUserId();
+          if (newMessage.sender_id !== currentUserId) {
             markMessageAsRead(conversationId);
           }
         }

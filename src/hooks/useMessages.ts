@@ -73,15 +73,51 @@ export function useConversationsList() {
       
       if (error) throw error;
       
-      return data.map(conv => ({
-        id: conv.id!,
-        last_message: conv.last_message,
-        last_message_at: conv.last_message_at,
-        unread_count: conv.unread_count || 0,
-        user: conv.participants?.find((p: any) => 
-          p.id !== supabase.auth.getUser()?.data?.user?.id
-        ) || {}
-      }));
+      const user = supabase.auth.getUser();
+      const currentUserId = (await user).data.user?.id;
+
+      return data.map(conv => {
+        // Safely handle participants, which could be a JSON array or string
+        let participantsArray = [];
+        if (conv.participants) {
+          try {
+            // If it's a string, parse it
+            if (typeof conv.participants === 'string') {
+              participantsArray = JSON.parse(conv.participants);
+            } 
+            // If it's already an array or object
+            else if (Array.isArray(conv.participants)) {
+              participantsArray = conv.participants;
+            }
+            // If it's an object but not an array
+            else if (typeof conv.participants === 'object') {
+              participantsArray = [conv.participants];
+            }
+          } catch (e) {
+            console.error('Error parsing participants:', e);
+            participantsArray = [];
+          }
+        }
+        
+        // Find the other participant (not current user)
+        const otherParticipant = Array.isArray(participantsArray) ? 
+          participantsArray.find((p: any) => p.id !== currentUserId) : null;
+          
+        return {
+          id: conv.id || '',
+          lastMessage: conv.last_message || 'Start a conversation',
+          time: conv.last_message_at 
+            ? new Date(conv.last_message_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+            : 'now',
+          unread: conv.unread_count || 0,
+          user: {
+            id: otherParticipant?.id || 'unknown',
+            name: otherParticipant?.full_name || otherParticipant?.username || 'Unknown User',
+            avatar: otherParticipant?.avatar_url || '',
+            username: otherParticipant?.username
+          }
+        };
+      });
     }
   );
 }

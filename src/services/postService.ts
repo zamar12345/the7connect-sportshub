@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 interface FetchPostsOptions {
@@ -42,7 +43,7 @@ export const fetchPosts = async (options: FetchPostsOptions = {}) => {
       throw error;
     }
 
-    // Map the response to match our Post type
+    // Map the response to ensure likes_count and comments_count are defined
     return data.map(post => ({
       ...post,
       likes_count: post.likes_count || 0,
@@ -50,6 +51,57 @@ export const fetchPosts = async (options: FetchPostsOptions = {}) => {
     }));
   } catch (error) {
     console.error("Error fetching posts:", error);
+    throw error;
+  }
+};
+
+// Fetch posts from users the current user follows
+export const fetchFollowingPosts = async () => {
+  const { data: user } = await supabase.auth.getUser();
+  
+  if (!user.user) {
+    return [];
+  }
+  
+  try {
+    // Get the user's following list
+    const { data: following, error: followingError } = await supabase
+      .from('follows')
+      .select('following_id')
+      .eq('follower_id', user.user.id);
+    
+    if (followingError) {
+      throw followingError;
+    }
+    
+    if (!following || following.length === 0) {
+      return [];
+    }
+    
+    // Get posts from followed users
+    const followingIds = following.map(f => f.following_id);
+    
+    const { data, error } = await supabase
+      .from('posts')
+      .select(`
+        *,
+        user:users(id, username, full_name, avatar_url)
+      `)
+      .in('user_id', followingIds)
+      .order('created_at', { ascending: false });
+      
+    if (error) {
+      throw error;
+    }
+    
+    // Ensure likes_count and comments_count are defined
+    return data.map(post => ({
+      ...post,
+      likes_count: post.likes_count || 0,
+      comments_count: post.comments_count || 0
+    }));
+  } catch (error) {
+    console.error("Error fetching following posts:", error);
     throw error;
   }
 };

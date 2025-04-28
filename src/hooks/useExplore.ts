@@ -50,7 +50,7 @@ export function useDiscoverUsers() {
     async () => {
       const { data, error } = await supabase
         .from('users')
-        .select('id, username, full_name, avatar_url, sport')
+        .select('id, username, full_name, avatar_url, sport, followers')
         .order('followers', { ascending: false })
         .limit(10);
         
@@ -59,7 +59,7 @@ export function useDiscoverUsers() {
       return data.map(user => ({
         ...user,
         name: user.full_name || user.username,
-        isVerified: user.followers > 500 // Just an example rule
+        isVerified: (user.followers || 0) > 500 // Added null check for followers
       }));
     }
   );
