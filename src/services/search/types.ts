@@ -45,4 +45,5 @@ export interface SearchOptions {
   filter?: FilterOption;
   sport?: string;
   limit?: number;
+  currentUserId?: string; // Added this property for currentUserId
 }
