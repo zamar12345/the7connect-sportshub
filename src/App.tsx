@@ -18,6 +18,7 @@ import NotFound from "@/pages/NotFound";
 import DonationSuccess from "@/pages/DonationSuccess";
 import DonationHistory from "@/pages/DonationHistory";
 import Settings from "@/pages/Settings";
+import AdvancedSearch from "@/pages/AdvancedSearch";
 
 // Import components
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -75,6 +76,10 @@ function App() {
     {
       path: "/settings",
       element: <ProtectedRoute><Settings /></ProtectedRoute>,
+    },
+    {
+      path: "/advanced-search",
+      element: <AdvancedSearch />,
     },
     {
       path: "/auth",

@@ -7,12 +7,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import PostCard from "@/components/PostCard";
 import SearchBar from "@/components/SearchBar";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import FollowButton from "@/components/FollowButton";
+import { Search } from "lucide-react";
 
 const Explore = () => {
   const [activeTab, setActiveTab] = useState("trending");
   const location = useLocation();
+  const navigate = useNavigate();
   
   // Get query from URL if it exists
   const queryParams = new URLSearchParams(location.search);
@@ -23,6 +25,17 @@ const Explore = () => {
       <div className="p-4">
         <div className="mb-4">
           <SearchBar placeholder="Search athletes, topics, or keywords" />
+        </div>
+        
+        <div className="mb-4">
+          <Button 
+            variant="outline" 
+            className="w-full flex justify-center items-center"
+            onClick={() => navigate('/advanced-search')}
+          >
+            <Search className="mr-2 h-4 w-4" />
+            Advanced Search Options
+          </Button>
         </div>
         
         <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">

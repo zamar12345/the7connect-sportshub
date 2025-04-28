@@ -11,26 +11,38 @@ import {
   HashtagSearchResult
 } from "@/services/searchService";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface SearchBarProps {
   className?: string;
   placeholder?: string;
+  value?: string;
+  onChange?: (query: string) => void;
 }
 
 const SearchBar = ({ 
   className = "", 
-  placeholder = "Search users, posts, or hashtags" 
+  placeholder = "Search users, posts, or hashtags",
+  value,
+  onChange
 }: SearchBarProps) => {
-  const [query, setQuery] = useState("");
+  // Use controlled or uncontrolled input based on props
+  const isControlled = value !== undefined && onChange !== undefined;
+  const [query, setQuery] = useState(value || "");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   
+  // Update internal state when controlled value changes
+  useEffect(() => {
+    if (isControlled && value !== query) {
+      setQuery(value);
+    }
+  }, [value, isControlled]);
+
   // Handle click outside to close results
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -68,10 +80,23 @@ const SearchBar = ({
     setShowResults(true);
   };
   
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setQuery(newValue);
+    
+    if (isControlled && onChange) {
+      onChange(newValue);
+    }
+  };
+  
   const handleClear = () => {
     setQuery("");
     setResults([]);
     setShowResults(false);
+    
+    if (isControlled && onChange) {
+      onChange("");
+    }
   };
   
   const handleResultClick = (result: SearchResult) => {
@@ -159,7 +184,7 @@ const SearchBar = ({
         />
         <Input
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={handleInputChange}
           placeholder={placeholder}
           className="w-full pl-10 pr-10"
           onFocus={() => query.length >= 2 && setShowResults(true)}
@@ -221,10 +246,10 @@ const SearchBar = ({
               <Button 
                 variant="ghost" 
                 className="w-full justify-start"
-                onClick={() => navigate(`/explore/search?q=${encodeURIComponent(query)}`)}
+                onClick={() => navigate(`/advanced-search?q=${encodeURIComponent(query)}`)}
               >
                 <Search size={16} className="mr-2" />
-                Search for "{query}"
+                Advanced search for "{query}"
               </Button>
             </div>
           )}
