@@ -1,0 +1,300 @@
+
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthProvider";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "sonner";
+import { Label } from "@/components/ui/label";
+import { User } from "lucide-react";
+
+type ProfileData = {
+  username: string;
+  full_name: string;
+  bio?: string;
+  avatar_url?: string;
+  sport?: string;
+  disciplines?: string[];
+};
+
+const ProfileEditor = ({ onClose }: { onClose: () => void }) => {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [formData, setFormData] = useState<ProfileData>({
+    username: "",
+    full_name: "",
+    bio: "",
+    avatar_url: "",
+    sport: "",
+    disciplines: []
+  });
+  const [newDiscipline, setNewDiscipline] = useState("");
+
+  // Fetch current profile data when component mounts
+  useState(() => {
+    const fetchProfile = async () => {
+      if (!user) return;
+      
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from("users")
+          .select("username, full_name, avatar_url, bio, sport, disciplines")
+          .eq("id", user.id)
+          .single();
+          
+        if (error) throw error;
+        
+        if (data) {
+          setFormData({
+            username: data.username || "",
+            full_name: data.full_name || "",
+            bio: data.bio || "",
+            avatar_url: data.avatar_url || "",
+            sport: data.sport || "",
+            disciplines: data.disciplines || []
+          });
+        }
+      } catch (error: any) {
+        toast.error(`Error loading profile: ${error.message}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchProfile();
+  }, [user]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    
+    try {
+      setUploading(true);
+      
+      // Generate a unique file path
+      const fileExt = file.name.split('.').pop();
+      const filePath = `avatars/${user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      
+      // Upload the file to Supabase storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+        
+      if (uploadError) throw uploadError;
+      
+      // Get the public URL
+      const { data } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+        
+      // Update the avatar URL in the form data
+      if (data) {
+        setFormData(prev => ({ ...prev, avatar_url: data.publicUrl }));
+        toast.success("Avatar uploaded successfully!");
+      }
+    } catch (error: any) {
+      toast.error(`Error uploading avatar: ${error.message}`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const addDiscipline = () => {
+    if (!newDiscipline.trim()) return;
+    
+    if (!formData.disciplines) {
+      setFormData(prev => ({ ...prev, disciplines: [newDiscipline] }));
+    } else {
+      setFormData(prev => ({ 
+        ...prev, 
+        disciplines: [...prev.disciplines!, newDiscipline]
+      }));
+    }
+    
+    setNewDiscipline("");
+  };
+
+  const removeDiscipline = (index: number) => {
+    if (!formData.disciplines) return;
+    
+    const updatedDisciplines = [...formData.disciplines];
+    updatedDisciplines.splice(index, 1);
+    setFormData(prev => ({ ...prev, disciplines: updatedDisciplines }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      
+      const { error } = await supabase
+        .from("users")
+        .update({
+          username: formData.username,
+          full_name: formData.full_name,
+          bio: formData.bio,
+          avatar_url: formData.avatar_url,
+          sport: formData.sport,
+          disciplines: formData.disciplines
+        })
+        .eq("id", user.id);
+        
+      if (error) throw error;
+      
+      toast.success("Profile updated successfully!");
+      onClose();
+    } catch (error: any) {
+      toast.error(`Error updating profile: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading && !formData.username) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="flex flex-col items-center space-y-4 mb-6">
+          <div className="relative">
+            <Avatar className="w-24 h-24 border-4 border-background">
+              {formData.avatar_url ? (
+                <AvatarImage src={formData.avatar_url} alt="Profile" />
+              ) : (
+                <AvatarFallback className="bg-primary/10">
+                  <User className="w-12 h-12 text-primary" />
+                </AvatarFallback>
+              )}
+            </Avatar>
+            
+            <div className="absolute -bottom-2 -right-2">
+              <Label htmlFor="avatar-upload" className="cursor-pointer">
+                <div className="bg-primary text-white p-2 rounded-full hover:bg-primary/90">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 20h9"></path>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                  </svg>
+                </div>
+                <input
+                  id="avatar-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                  disabled={uploading}
+                />
+              </Label>
+            </div>
+          </div>
+          {uploading && <p className="text-sm text-muted-foreground">Uploading...</p>}
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="full_name">Full Name</Label>
+          <Input
+            id="full_name"
+            name="full_name"
+            value={formData.full_name}
+            onChange={handleChange}
+            placeholder="Your full name"
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="username">Username</Label>
+          <Input
+            id="username"
+            name="username"
+            value={formData.username}
+            onChange={handleChange}
+            placeholder="@username"
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="bio">Bio</Label>
+          <Textarea
+            id="bio"
+            name="bio"
+            value={formData.bio || ""}
+            onChange={handleChange}
+            placeholder="Tell us about yourself"
+            rows={3}
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="sport">Primary Sport</Label>
+          <Input
+            id="sport"
+            name="sport"
+            value={formData.sport || ""}
+            onChange={handleChange}
+            placeholder="e.g., Running, Basketball, etc."
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label>Disciplines</Label>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {formData.disciplines?.map((discipline, index) => (
+              <div key={index} className="bg-secondary text-secondary-foreground text-xs py-1 px-2 rounded-full flex items-center">
+                <span>{discipline}</span>
+                <button 
+                  type="button" 
+                  onClick={() => removeDiscipline(index)}
+                  className="ml-1 text-secondary-foreground/70"
+                >
+                  &times;
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className="flex mt-2">
+            <Input
+              value={newDiscipline}
+              onChange={(e) => setNewDiscipline(e.target.value)}
+              placeholder="Add a discipline"
+              className="mr-2"
+            />
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={addDiscipline}
+            >
+              Add
+            </Button>
+          </div>
+        </div>
+        
+        <div className="flex justify-end space-x-2 pt-4">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={loading}>
+            {loading ? "Saving..." : "Save Profile"}
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default ProfileEditor;

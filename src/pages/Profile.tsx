@@ -1,18 +1,94 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthProvider";
 import MobileLayout from "@/components/layout/MobileLayout";
-import { mockPosts, currentUser } from "@/data/mockData";
+import { mockPosts } from "@/data/mockData";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PostCard from "@/components/PostCard";
-import { CreditCard, Award, Settings, Heart, Trophy, Medal } from "lucide-react";
+import { CreditCard, Award, Settings, Heart, Trophy, Medal, User } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import DonateButton from "@/components/DonateButton";
+import { toast } from "sonner";
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import ProfileEditor from "@/components/ProfileEditor";
+
+type ProfileData = {
+  id: string;
+  username: string;
+  full_name: string;
+  bio?: string;
+  avatar_url?: string;
+  sport?: string;
+  disciplines?: string[];
+  followers?: number;
+  following?: number;
+  achievements?: {
+    title: string;
+    year: string;
+    icon?: "trophy" | "medal" | "award";
+  }[];
+  stats?: {
+    label: string;
+    value: string | number;
+  }[];
+};
 
 const Profile = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("posts");
-  const user = currentUser;
-  const userPosts = mockPosts.filter((post) => post.user.id === user.id);
+  const [profileData, setProfileData] = useState<ProfileData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const userPosts = mockPosts.filter((post) => post.user.id === profileData?.id);
+  
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user) return;
+      
+      try {
+        setLoading(true);
+        
+        const { data, error } = await supabase
+          .from("users")
+          .select("*")
+          .eq("id", user.id)
+          .single();
+          
+        if (error) throw error;
+        
+        if (data) {
+          setProfileData({
+            id: data.id,
+            username: data.username || "",
+            full_name: data.full_name || "",
+            bio: data.bio || "",
+            avatar_url: data.avatar_url || "",
+            sport: data.sport || "",
+            disciplines: data.disciplines || [],
+            followers: data.followers || 0,
+            following: data.following || 0,
+            achievements: data.achievements || [],
+            stats: data.stats || []
+          });
+        }
+      } catch (error: any) {
+        console.error("Error fetching profile:", error);
+        toast.error(`Error loading profile: ${error.message}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchProfile();
+  }, [user, isEditorOpen]);
   
   const getAchievementIcon = (icon?: "trophy" | "medal" | "award") => {
     switch (icon) {
@@ -26,6 +102,16 @@ const Profile = () => {
     }
   };
   
+  if (loading || !profileData) {
+    return (
+      <MobileLayout>
+        <div className="flex items-center justify-center h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        </div>
+      </MobileLayout>
+    );
+  }
+  
   return (
     <MobileLayout>
       <div className="flex flex-col">
@@ -35,16 +121,23 @@ const Profile = () => {
           
           <div className="absolute bottom-0 left-4 transform translate-y-1/2 border-4 border-background rounded-full">
             <Avatar className="w-20 h-20">
-              <AvatarImage src={user.avatar} alt={user.name} />
-              <AvatarFallback className="text-2xl">{user.name[0]}</AvatarFallback>
+              {profileData.avatar_url ? (
+                <AvatarImage src={profileData.avatar_url} alt={profileData.full_name} />
+              ) : (
+                <AvatarFallback className="text-2xl bg-primary/10">
+                  <User className="h-8 w-8 text-primary" />
+                </AvatarFallback>
+              )}
             </Avatar>
           </div>
           
           <div className="absolute bottom-0 right-4 transform translate-y-1/2 flex space-x-2">
-            {user.id !== currentUser.id && (
-              <DonateButton recipientId={user.id} recipientName={user.name} />
-            )}
-            <Button variant="outline" size="sm" className="rounded-full">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="rounded-full"
+              onClick={() => setIsEditorOpen(true)}
+            >
               <Settings size={16} className="mr-1" />
               Edit
             </Button>
@@ -58,47 +151,41 @@ const Profile = () => {
         {/* Profile Info */}
         <div className="mt-12 p-4">
           <div className="flex items-center">
-            <h1 className="text-xl font-bold mr-1">{user.name}</h1>
-            {user.isVerified && (
-              <span className="text-primary">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" 
-                    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </span>
-            )}
+            <h1 className="text-xl font-bold mr-1">{profileData.full_name}</h1>
           </div>
-          <p className="text-muted-foreground">@{user.username}</p>
+          <p className="text-muted-foreground">@{profileData.username}</p>
           
           <div className="flex flex-wrap gap-2 mt-1">
-            <span className="bg-primary/10 text-primary text-xs py-1 px-2 rounded-full">
-              {user.sport}
-            </span>
-            {user.disciplines?.map((discipline) => (
-              <span key={discipline} className="bg-sport-blue/10 text-sport-blue text-xs py-1 px-2 rounded-full">
+            {profileData.sport && (
+              <span className="bg-primary/10 text-primary text-xs py-1 px-2 rounded-full">
+                {profileData.sport}
+              </span>
+            )}
+            {profileData.disciplines?.map((discipline, index) => (
+              <span key={index} className="bg-sport-blue/10 text-sport-blue text-xs py-1 px-2 rounded-full">
                 {discipline}
               </span>
             ))}
           </div>
           
-          <p className="mt-2 text-foreground">{user.bio}</p>
+          {profileData.bio && <p className="mt-2 text-foreground">{profileData.bio}</p>}
           
           <div className="flex space-x-4 mt-3">
             <div>
-              <span className="font-semibold">{user.following}</span>
+              <span className="font-semibold">{profileData.following || 0}</span>
               <span className="text-muted-foreground ml-1">Following</span>
             </div>
             <div>
-              <span className="font-semibold">{user.followers}</span>
+              <span className="font-semibold">{profileData.followers || 0}</span>
               <span className="text-muted-foreground ml-1">Followers</span>
             </div>
           </div>
           
-          {user.achievements && (
+          {profileData.achievements && profileData.achievements.length > 0 && (
             <Card className="mt-4 p-4 bg-card/50">
               <h3 className="text-sm font-semibold mb-3">Achievements</h3>
               <div className="space-y-2">
-                {user.achievements.map((achievement, index) => (
+                {profileData.achievements.map((achievement, index) => (
                   <div key={index} className="flex items-center gap-2">
                     {getAchievementIcon(achievement.icon)}
                     <span className="text-sm">{achievement.title}</span>
@@ -109,9 +196,9 @@ const Profile = () => {
             </Card>
           )}
           
-          {user.stats && (
+          {profileData.stats && profileData.stats.length > 0 && (
             <div className="mt-4 grid grid-cols-3 gap-2">
-              {user.stats.map((stat, index) => (
+              {profileData.stats.map((stat, index) => (
                 <div key={index} className="bg-card/50 rounded-lg p-3 text-center">
                   <div className="text-lg font-semibold">{stat.value}</div>
                   <div className="text-xs text-muted-foreground">{stat.label}</div>
@@ -192,6 +279,15 @@ const Profile = () => {
           </Tabs>
         </div>
       </div>
+      
+      <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Profile</DialogTitle>
+          </DialogHeader>
+          <ProfileEditor onClose={() => setIsEditorOpen(false)} />
+        </DialogContent>
+      </Dialog>
     </MobileLayout>
   );
 };
