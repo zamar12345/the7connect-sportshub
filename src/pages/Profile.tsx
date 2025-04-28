@@ -19,6 +19,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import ProfileEditor from "@/components/ProfileEditor";
+import { Json } from "@/integrations/supabase/types";
+
+type Achievement = {
+  title: string;
+  year: string;
+  icon?: "trophy" | "medal" | "award";
+};
+
+type Stat = {
+  label: string;
+  value: string | number;
+};
 
 type ProfileData = {
   id: string;
@@ -30,16 +42,62 @@ type ProfileData = {
   disciplines?: string[];
   followers?: number;
   following?: number;
-  achievements?: {
-    title: string;
-    year: string;
-    icon?: "trophy" | "medal" | "award";
-  }[];
-  stats?: {
-    label: string;
-    value: string | number;
-  }[];
+  achievements?: Achievement[];
+  stats?: Stat[];
 };
+
+// Helper function to safely parse JSON data with type checking
+function parseAchievements(data: Json | null): Achievement[] {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    return [];
+  }
+  
+  try {
+    const achievements = Array.isArray(data) 
+      ? data 
+      : (data as { [key: string]: any })['achievements'] || [];
+    
+    if (!Array.isArray(achievements)) {
+      return [];
+    }
+    
+    return achievements.filter((item): item is Achievement => 
+      typeof item === 'object' && 
+      item !== null && 
+      'title' in item && 
+      'year' in item
+    );
+  } catch (error) {
+    console.error("Error parsing achievements:", error);
+    return [];
+  }
+}
+
+function parseStats(data: Json | null): Stat[] {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    return [];
+  }
+  
+  try {
+    const stats = Array.isArray(data) 
+      ? data 
+      : (data as { [key: string]: any })['stats'] || [];
+    
+    if (!Array.isArray(stats)) {
+      return [];
+    }
+    
+    return stats.filter((item): item is Stat => 
+      typeof item === 'object' && 
+      item !== null && 
+      'label' in item && 
+      'value' in item
+    );
+  } catch (error) {
+    console.error("Error parsing stats:", error);
+    return [];
+  }
+}
 
 const Profile = () => {
   const { user } = useAuth();
@@ -75,8 +133,8 @@ const Profile = () => {
             disciplines: data.disciplines || [],
             followers: data.followers || 0,
             following: data.following || 0,
-            achievements: data.achievements || [],
-            stats: data.stats || []
+            achievements: parseAchievements(data.achievements),
+            stats: parseStats(data.stats)
           });
         }
       } catch (error: any) {
