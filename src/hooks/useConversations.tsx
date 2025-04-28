@@ -4,6 +4,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Conversation, ConversationParticipant } from "@/types/messages";
 
+// Define a more explicit type for the database response to prevent deep type instantiation
+type ConversationDetailsResponse = {
+  id: string;
+  last_message: string | null;
+  last_message_at: string | null;
+  updated_at: string | null;
+  participants: any; // Using any here to avoid deep type instantiation
+  unread_count: number | null;
+}
+
 export const useConversations = (userId?: string) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,11 +28,15 @@ export const useConversations = (userId?: string) => {
     try {
       setLoading(true);
       
+      // Using explicit typing to avoid deep type instantiation
       const { data: recentConversations, error } = await supabase
         .from('conversation_details')
         .select('*')
-        .eq('participants->0->id', currentUserId)
-        .order('updated_at', { ascending: false });
+        // Using a simpler filter approach
+        .filter('participants', 'cs', `[{"id":"${currentUserId}"}]`) as { 
+          data: ConversationDetailsResponse[] | null; 
+          error: any;
+        };
       
       if (error) throw error;
       
