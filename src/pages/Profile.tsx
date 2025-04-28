@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthProvider";
@@ -46,7 +45,6 @@ type ProfileData = {
   stats?: Stat[];
 };
 
-// Helper function to safely parse JSON data with type checking
 function parseAchievements(data: Json | null): Achievement[] {
   if (!data || typeof data !== 'object' || Array.isArray(data)) {
     return [];
@@ -173,7 +171,6 @@ const Profile = () => {
   return (
     <MobileLayout>
       <div className="flex flex-col">
-        {/* Profile Header */}
         <div className="relative">
           <div className="h-32 bg-gradient-to-r from-sport-blue via-sport-green to-sport-orange"></div>
           
@@ -206,7 +203,6 @@ const Profile = () => {
           </div>
         </div>
         
-        {/* Profile Info */}
         <div className="mt-12 p-4">
           <div className="flex items-center">
             <h1 className="text-xl font-bold mr-1">{profileData.full_name}</h1>
@@ -266,7 +262,6 @@ const Profile = () => {
           )}
         </div>
         
-        {/* Profile Tabs */}
         <div className="border-t border-border">
           <Tabs defaultValue="posts" onValueChange={setActiveTab}>
             <TabsList className="w-full bg-transparent h-12">
@@ -292,9 +287,13 @@ const Profile = () => {
             
             <TabsContent value="posts">
               <div className="divide-y divide-border">
-                {userPosts.map((post) => (
-                  <PostCard key={post.id} post={post} />
-                ))}
+                {userPosts.map((post) => {
+                  const postWithCreatedAt = {
+                    ...post,
+                    created_at: post.created_at || new Date().toISOString()
+                  };
+                  return <PostCard key={post.id} post={postWithCreatedAt} />;
+                })}
                 
                 {userPosts.length === 0 && (
                   <div className="p-8 text-center">
