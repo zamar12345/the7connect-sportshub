@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { Input } from "@/components/ui/input";
@@ -62,7 +61,6 @@ const Messages = () => {
       fetchMessages(selectedConversation.id);
       markMessagesAsRead(selectedConversation.id);
       
-      // Subscribe to new messages for the selected conversation
       const channel = supabase
         .channel(`conversation:${selectedConversation.id}`)
         .on('postgres_changes', 
@@ -101,7 +99,6 @@ const Messages = () => {
     try {
       setLoading(true);
       
-      // In a real implementation, we would fetch actual conversations from the database
       const { data: recentConversations, error } = await supabase
         .from('conversation_details')
         .select('*')
@@ -112,8 +109,19 @@ const Messages = () => {
       
       if (recentConversations) {
         const formattedConversations = recentConversations.map(conv => {
-          // Find the other participant (not the current user)
-          const participants = conv.participants as ConversationParticipant[];
+          let participants: ConversationParticipant[] = [];
+          
+          try {
+            if (conv.participants && typeof conv.participants === 'object') {
+              participants = Array.isArray(conv.participants) 
+                ? conv.participants as ConversationParticipant[] 
+                : [];
+            }
+          } catch (e) {
+            console.error("Error parsing participants:", e);
+            participants = [];
+          }
+          
           const otherParticipant = participants.find(p => p.id !== user?.id) || 
             { id: 'unknown', full_name: 'Unknown User', avatar_url: '', username: null };
           
@@ -136,7 +144,6 @@ const Messages = () => {
     } catch (error: any) {
       toast.error("Failed to load conversations: " + error.message);
       
-      // Fallback to mock data if there's an error
       const { data: mockUsers } = await supabase
         .from('users')
         .select('id, full_name, avatar_url, username')
@@ -144,7 +151,6 @@ const Messages = () => {
         .limit(5);
       
       if (mockUsers) {
-        // Converting the mock users to conversations format
         const mockConversations = mockUsers.map(mockUser => ({
           id: `conv-${mockUser.id}`,
           user: {
@@ -178,7 +184,6 @@ const Messages = () => {
       if (messagesData && messagesData.length > 0) {
         setMessages(messagesData);
       } else {
-        // If no messages found, use mock data
         const mockMessages = [
           {
             id: "msg-1",
@@ -212,14 +217,12 @@ const Messages = () => {
 
   const markMessagesAsRead = async (conversationId: string) => {
     try {
-      // Call the Supabase function to mark messages as read
       const { error } = await supabase.rpc('mark_messages_as_read', {
         conversation_id_param: conversationId
       });
       
       if (error) throw error;
       
-      // Update the unread count in the UI
       setConversations(prevConversations => 
         prevConversations.map(conv => 
           conv.id === conversationId ? { ...conv, unread: 0 } : conv
@@ -236,7 +239,6 @@ const Messages = () => {
     try {
       setSendingMessage(true);
       
-      // In a real implementation, we would insert into direct_messages table
       const { data, error } = await supabase
         .from('direct_messages')
         .insert({
@@ -249,12 +251,10 @@ const Messages = () => {
       
       if (error) throw error;
       
-      // Update the local state
       if (data) {
         const newMsg = data[0];
         setMessages(prevMessages => [...prevMessages, newMsg]);
         
-        // Update the conversation with the last message
         setConversations(prevConversations => 
           prevConversations.map(conv => 
             conv.id === selectedConversation.id ? 
