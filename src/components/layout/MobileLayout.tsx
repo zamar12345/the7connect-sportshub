@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { 
@@ -11,6 +10,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import Logo from "@/components/Logo";
 
 const MobileLayout = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
@@ -34,9 +34,7 @@ const MobileLayout = ({ children }: { children: React.ReactNode }) => {
       {/* Header */}
       <header className="fixed top-0 w-full bg-background/80 backdrop-blur-md z-10 border-b border-border">
         <div className="flex items-center justify-between h-14 px-4">
-          <h1 className="text-xl font-bold text-primary">
-            The7Connect
-          </h1>
+          <Logo />
           
           <div className="flex items-center space-x-2">
             <Button variant="ghost" size="icon" onClick={() => navigate("/profile")}>
