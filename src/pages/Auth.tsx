@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -27,15 +28,33 @@ import {
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Mail, Lock, Github, Twitter, Facebook, Instagram } from "lucide-react";
+import { Mail, Lock, Github, Twitter, Facebook, Instagram, User } from "lucide-react";
+
+// Password regex: at least 8 chars, 1 uppercase, 1 lowercase, 1 number
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 
 const passwordResetSchema = z.object({
   email: z.string().email("Please enter a valid email address")
 });
 
 const passwordUpdateSchema = z.object({
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  confirmPassword: z.string().min(6, "Password must be at least 6 characters")
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(passwordRegex, "Password must contain at least one uppercase letter, one lowercase letter, and one number"),
+  confirmPassword: z.string().min(8, "Password must be at least 8 characters")
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"]
+});
+
+const signupSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(passwordRegex, "Password must contain at least one uppercase letter, one lowercase letter, and one number"),
+  confirmPassword: z.string().min(8, "Password must be at least 8 characters")
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"]
@@ -67,6 +86,17 @@ const Auth = () => {
     }
   });
 
+  const signupForm = useForm<z.infer<typeof signupSchema>>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      password: "",
+      confirmPassword: ""
+    }
+  });
+
   useEffect(() => {
     const reset = searchParams.get("reset");
     if (reset === "true") {
@@ -78,16 +108,20 @@ const Auth = () => {
     }
   }, [searchParams]);
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSignUp = async (values: z.infer<typeof signupSchema>) => {
     setLoading(true);
     
     try {
       const { error } = await supabase.auth.signUp({
-        email,
-        password,
+        email: values.email,
+        password: values.password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth?verification=true`,
+          data: {
+            first_name: values.firstName,
+            last_name: values.lastName,
+            full_name: `${values.firstName} ${values.lastName}`
+          }
         }
       });
       
@@ -149,7 +183,7 @@ const Auth = () => {
   const handleSocialLogin = async (provider: 'github' | 'twitter' | 'facebook' | 'instagram') => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
-        provider,
+        provider: provider as any,
         options: {
           redirectTo: `${window.location.origin}`,
         },
@@ -381,87 +415,148 @@ const Auth = () => {
           </TabsContent>
           
           <TabsContent value="signup">
-            <form onSubmit={handleSignUp} className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Mail className="text-muted-foreground w-5 h-5" />
-                  <Input
-                    type="email"
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
+            <Form {...signupForm}>
+              <form onSubmit={signupForm.handleSubmit(handleSignUp)} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={signupForm.control}
+                    name="firstName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center space-x-2">
+                          <User className="text-muted-foreground w-5 h-5" />
+                          <FormControl>
+                            <Input placeholder="First Name" {...field} />
+                          </FormControl>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={signupForm.control}
+                    name="lastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Input placeholder="Last Name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Lock className="text-muted-foreground w-5 h-5" />
-                  <Input
-                    type="password"
-                    placeholder="Password (min 6 characters)"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    minLength={6}
-                    required
-                  />
-                </div>
+                <FormField
+                  control={signupForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center space-x-2">
+                        <Mail className="text-muted-foreground w-5 h-5" />
+                        <FormControl>
+                          <Input type="email" placeholder="Email" {...field} />
+                        </FormControl>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={signupForm.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center space-x-2">
+                        <Lock className="text-muted-foreground w-5 h-5" />
+                        <FormControl>
+                          <Input 
+                            type="password" 
+                            placeholder="Password (min 8 chars, 1 uppercase, 1 lowercase, 1 number)" 
+                            {...field} 
+                          />
+                        </FormControl>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={signupForm.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center space-x-2">
+                        <Lock className="text-muted-foreground w-5 h-5" />
+                        <FormControl>
+                          <Input 
+                            type="password" 
+                            placeholder="Confirm Password" 
+                            {...field} 
+                          />
+                        </FormControl>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button 
+                  type="submit" 
+                  className="w-full bg-sport-blue hover:bg-sport-blue/90"
+                  disabled={loading}
+                >
+                  {loading ? "Creating account..." : "Sign Up"}
+                </Button>
+              </form>
+            </Form>
+            
+            <div className="relative mt-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-muted"></div>
               </div>
+              <div className="relative flex justify-center">
+                <span className="bg-background px-2 text-xs text-muted-foreground">
+                  OR CONTINUE WITH
+                </span>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 mt-6">
               <Button 
-                type="submit" 
-                className="w-full bg-sport-blue hover:bg-sport-blue/90"
-                disabled={loading}
+                type="button" 
+                variant="outline" 
+                className="w-full"
+                onClick={() => handleSocialLogin('github')}
               >
-                {loading ? "Creating account..." : "Sign Up"}
+                <Github className="mr-2 h-4 w-4" /> GitHub
               </Button>
-              
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-muted"></div>
-                </div>
-                <div className="relative flex justify-center">
-                  <span className="bg-background px-2 text-xs text-muted-foreground">
-                    OR CONTINUE WITH
-                  </span>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => handleSocialLogin('github')}
-                >
-                  <Github className="mr-2 h-4 w-4" /> GitHub
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => handleSocialLogin('twitter')}
-                >
-                  <Twitter className="mr-2 h-4 w-4" /> Twitter
-                </Button>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => handleSocialLogin('facebook')}
-                >
-                  <Facebook className="mr-2 h-4 w-4" /> Facebook
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => handleSocialLogin('instagram')}
-                >
-                  <Instagram className="mr-2 h-4 w-4" /> Instagram
-                </Button>
-              </div>
-            </form>
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="w-full"
+                onClick={() => handleSocialLogin('twitter')}
+              >
+                <Twitter className="mr-2 h-4 w-4" /> Twitter
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="w-full"
+                onClick={() => handleSocialLogin('facebook')}
+              >
+                <Facebook className="mr-2 h-4 w-4" /> Facebook
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="w-full"
+                onClick={() => handleSocialLogin('instagram')}
+              >
+                <Instagram className="mr-2 h-4 w-4" /> Instagram
+              </Button>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
