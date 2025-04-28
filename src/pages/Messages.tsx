@@ -109,21 +109,27 @@ const Messages = () => {
       
       if (recentConversations) {
         const formattedConversations = recentConversations.map(conv => {
-          let participants: ConversationParticipant[] = [];
+          const participantsArray = Array.isArray(conv.participants) 
+            ? conv.participants 
+            : typeof conv.participants === 'object' && conv.participants !== null
+              ? [conv.participants]
+              : [];
           
-          try {
-            if (conv.participants && typeof conv.participants === 'object') {
-              participants = Array.isArray(conv.participants) 
-                ? conv.participants as ConversationParticipant[] 
-                : [];
+          const typedParticipants: ConversationParticipant[] = [];
+          
+          for (const participant of participantsArray) {
+            if (typeof participant === 'object' && participant !== null) {
+              typedParticipants.push({
+                id: String(participant.id || ''),
+                full_name: typeof participant.full_name === 'string' ? participant.full_name : null,
+                avatar_url: typeof participant.avatar_url === 'string' ? participant.avatar_url : null,
+                username: typeof participant.username === 'string' ? participant.username : null
+              });
             }
-          } catch (e) {
-            console.error("Error parsing participants:", e);
-            participants = [];
           }
           
-          const otherParticipant = participants.find(p => p.id !== user?.id) || 
-            { id: 'unknown', full_name: 'Unknown User', avatar_url: '', username: null };
+          const otherParticipant = typedParticipants.find(p => p.id !== user?.id) || 
+            { id: 'unknown', full_name: 'Unknown User', avatar_url: null, username: null };
           
           return {
             id: conv.id,
