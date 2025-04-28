@@ -77,7 +77,7 @@ serve(async (req) => {
     );
 
     // Record the donation in the database
-    await supabaseAdmin.from("donations").insert({
+    const { error: insertError } = await supabaseAdmin.from("donations").insert({
       user_id: user.id,
       recipient_id: recipientId,
       amount: amount / 100, // Convert from cents to dollars for storage
@@ -85,6 +85,11 @@ serve(async (req) => {
       stripe_session_id: session.id,
       status: "pending"
     });
+
+    if (insertError) {
+      console.error("Error recording donation:", insertError);
+      throw new Error("Failed to record donation");
+    }
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
