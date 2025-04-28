@@ -38,40 +38,38 @@ function App() {
       path: "/",
       element: <Index />,
       errorElement: <NotFound />,
-      children: [
-        {
-          path: "/",
-          element: <Home />,
-        },
-        {
-          path: "/explore",
-          element: <Explore />,
-        },
-        {
-          path: "/notifications",
-          element: <Notifications />,
-        },
-        {
-          path: "/messages",
-          element: <ProtectedRoute><Messages /></ProtectedRoute>,
-        },
-        {
-          path: "/profile",
-          element: <ProtectedRoute><Profile /></ProtectedRoute>,
-        },
-        {
-          path: "/profile/:id",
-          element: <Profile />,
-        },
-        {
-          path: "/compose",
-          element: <ProtectedRoute><Compose /></ProtectedRoute>,
-        },
-        {
-          path: "/donation-history",
-          element: <ProtectedRoute><DonationHistory /></ProtectedRoute>,
-        },
-      ]
+    },
+    {
+      path: "/home",
+      element: <Home />,
+    },
+    {
+      path: "/explore",
+      element: <Explore />,
+    },
+    {
+      path: "/notifications",
+      element: <Notifications />,
+    },
+    {
+      path: "/messages",
+      element: <ProtectedRoute><Messages /></ProtectedRoute>,
+    },
+    {
+      path: "/profile",
+      element: <ProtectedRoute><Profile /></ProtectedRoute>,
+    },
+    {
+      path: "/profile/:id",
+      element: <Profile />,
+    },
+    {
+      path: "/compose",
+      element: <ProtectedRoute><Compose /></ProtectedRoute>,
+    },
+    {
+      path: "/donation-history",
+      element: <ProtectedRoute><DonationHistory /></ProtectedRoute>,
     },
     {
       path: "/auth",
