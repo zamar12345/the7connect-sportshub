@@ -46,14 +46,9 @@ const Explore = () => {
             <div className="bg-card rounded-lg p-4">
               <h3 className="font-semibold mb-3">Trending Posts</h3>
               <div className="space-y-4">
-                {mockPosts.slice(0, 3).map((post) => {
-                  // Ensure post has created_at property
-                  const postWithCreatedAt = {
-                    ...post,
-                    created_at: post.created_at || new Date().toISOString()
-                  };
-                  return <PostCard key={post.id} post={postWithCreatedAt} />;
-                })}
+                {mockPosts.slice(0, 3).map((post) => (
+                  <PostCard key={post.id} post={post} />
+                ))}
               </div>
             </div>
           </TabsContent>

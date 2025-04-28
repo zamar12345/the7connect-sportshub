@@ -18,6 +18,7 @@ export interface User {
     label: string;
     value: string;
   }[];
+  full_name: string;
 }
 
 export interface Post {
@@ -33,6 +34,9 @@ export interface Post {
   hashtags?: string[];
   liked?: boolean;
   reposted?: boolean;
+  created_at: string;
+  likes_count?: number;
+  comments_count?: number;
 }
 
 export const currentUser: User = {
@@ -55,7 +59,8 @@ export const currentUser: User = {
     { label: "Points per game", value: "28.5" },
     { label: "Assists", value: "9.2" },
     { label: "Field goal %", value: "52.3" }
-  ]
+  ],
+  full_name: "Alex Johnson"
 };
 
 export const mockUsers: User[] = [
@@ -69,7 +74,8 @@ export const mockUsers: User[] = [
     sport: "Tennis",
     followers: 1254,
     following: 432,
-    isVerified: true
+    isVerified: true,
+    full_name: "Sarah Williams"
   },
   {
     id: "user-3",
@@ -79,7 +85,8 @@ export const mockUsers: User[] = [
     bio: "Football coach | Developing champions | Career adviser",
     sport: "Football",
     followers: 764,
-    following: 221
+    following: 221,
+    full_name: "Mike Rodriguez"
   },
   {
     id: "user-4",
@@ -90,7 +97,8 @@ export const mockUsers: User[] = [
     sport: "Swimming",
     followers: 2410,
     following: 189,
-    isVerified: true
+    isVerified: true,
+    full_name: "Jenny Kim"
   }
 ];
 
@@ -105,7 +113,10 @@ export const mockPosts: Post[] = [
     reposts: 7,
     timestamp: "2h",
     hashtags: ["training", "tennis", "tournament"],
-    liked: true
+    liked: true,
+    created_at: new Date().toISOString(),
+    likes_count: 124,
+    comments_count: 23
   },
   {
     id: "post-2",
@@ -115,7 +126,10 @@ export const mockPosts: Post[] = [
     comments: 14,
     reposts: 3,
     timestamp: "4h",
-    hashtags: ["basketball", "gameday", "HomeGame"]
+    hashtags: ["basketball", "gameday", "HomeGame"],
+    created_at: new Date().toISOString(),
+    likes_count: 87,
+    comments_count: 14
   },
   {
     id: "post-3",
@@ -125,7 +139,10 @@ export const mockPosts: Post[] = [
     comments: 45,
     reposts: 67,
     timestamp: "7h",
-    hashtags: ["football", "recruiting", "academy", "youth"]
+    hashtags: ["football", "recruiting", "academy", "youth"],
+    created_at: new Date().toISOString(),
+    likes_count: 201,
+    comments_count: 45
   },
   {
     id: "post-4",
@@ -136,7 +153,10 @@ export const mockPosts: Post[] = [
     comments: 56,
     reposts: 21,
     timestamp: "9h",
-    hashtags: ["swimming", "personalbest", "hardwork"]
+    hashtags: ["swimming", "personalbest", "hardwork"],
+    created_at: new Date().toISOString(),
+    likes_count: 345,
+    comments_count: 56
   },
   {
     id: "post-5",
@@ -146,7 +166,10 @@ export const mockPosts: Post[] = [
     comments: 32,
     reposts: 5,
     timestamp: "11h",
-    hashtags: ["recovery", "selfcare", "athletelife"]
+    hashtags: ["recovery", "selfcare", "athletelife"],
+    created_at: new Date().toISOString(),
+    likes_count: 76,
+    comments_count: 32
   },
   {
     id: "post-6",
@@ -157,7 +180,10 @@ export const mockPosts: Post[] = [
     comments: 89,
     reposts: 112,
     timestamp: "1d",
-    hashtags: ["partnership", "basketball", "SponsoredPost"]
+    hashtags: ["partnership", "basketball", "SponsoredPost"],
+    created_at: new Date().toISOString(),
+    likes_count: 423,
+    comments_count: 89
   }
 ];
 

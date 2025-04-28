@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthProvider";
@@ -287,13 +288,9 @@ const Profile = () => {
             
             <TabsContent value="posts">
               <div className="divide-y divide-border">
-                {userPosts.map((post) => {
-                  const postWithCreatedAt = {
-                    ...post,
-                    created_at: post.created_at || new Date().toISOString()
-                  };
-                  return <PostCard key={post.id} post={postWithCreatedAt} />;
-                })}
+                {userPosts.map((post) => (
+                  <PostCard key={post.id} post={post} />
+                ))}
                 
                 {userPosts.length === 0 && (
                   <div className="p-8 text-center">

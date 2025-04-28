@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Heart, MessageSquare, Repeat2, Share } from "lucide-react";
 import { Button } from "@/components/ui/button";
