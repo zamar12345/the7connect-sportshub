@@ -5,22 +5,53 @@ import { toast } from "sonner";
 // Fetch user's notifications
 export const fetchNotifications = async () => {
   try {
-    const { data, error } = await supabase
+    // First get the notifications
+    const { data: notifications, error: notificationsError } = await supabase
       .from('notifications')
-      .select(`
-        *,
-        actor:actor_id (
-          id, 
-          username, 
-          full_name, 
-          avatar_url
-        )
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
       
-    if (error) throw error;
+    if (notificationsError) throw notificationsError;
     
-    return data;
+    // If we have notifications, fetch the actor details separately
+    if (notifications && notifications.length > 0) {
+      // Get unique actor IDs
+      const actorIds = [...new Set(notifications
+        .filter(n => n.actor_id)
+        .map(n => n.actor_id))];
+      
+      if (actorIds.length > 0) {
+        // Fetch actor details
+        const { data: actors, error: actorsError } = await supabase
+          .from('users')
+          .select('id, username, full_name, avatar_url')
+          .in('id', actorIds);
+        
+        if (actorsError) throw actorsError;
+        
+        // Map actors to notifications
+        return notifications.map(notification => {
+          if (notification.actor_id) {
+            const actor = actors?.find(a => a.id === notification.actor_id);
+            return {
+              ...notification,
+              actor: actor || { 
+                id: notification.actor_id,
+                username: 'unknown',
+                full_name: 'Unknown User',
+                avatar_url: null 
+              }
+            };
+          }
+          return {
+            ...notification,
+            actor: null
+          };
+        });
+      }
+    }
+    
+    return notifications || [];
   } catch (error: any) {
     console.error("Error fetching notifications:", error);
     toast.error(`Error: ${error.message}`);

@@ -24,7 +24,7 @@ interface Notification {
   is_read: boolean;
   created_at: string;
   actor_id: string;
-  actor: NotificationActor;
+  actor: NotificationActor | null;
 }
 
 const Notifications = () => {
@@ -42,7 +42,8 @@ const Notifications = () => {
     try {
       setLoading(true);
       const notificationsData = await fetchNotifications();
-      setNotifications(notificationsData);
+      // Make TypeScript happy by explicitly casting the result
+      setNotifications(notificationsData as Notification[]);
     } catch (error) {
       console.error("Error loading notifications:", error);
     } finally {
@@ -158,7 +159,7 @@ const Notifications = () => {
                   <div className="flex items-start justify-between">
                     <div className="flex items-center">
                       <span className="font-semibold mr-1">
-                        {notification.actor?.full_name || notification.actor?.username}
+                        {notification.actor?.full_name || notification.actor?.username || "Unknown User"}
                       </span>
                       <span className="text-muted-foreground text-sm">{notification.content}</span>
                     </div>
@@ -170,7 +171,7 @@ const Notifications = () => {
                     </div>
                   </div>
                   
-                  {notification.type === "follow" && (
+                  {notification.type === "follow" && notification.actor && (
                     <Button 
                       size="sm" 
                       variant="outline" 
