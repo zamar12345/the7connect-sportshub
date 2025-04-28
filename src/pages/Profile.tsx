@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { mockPosts, currentUser } from "@/data/mockData";
@@ -6,22 +5,33 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PostCard from "@/components/PostCard";
-import { CreditCard, Award, Settings, Heart } from "lucide-react";
+import { CreditCard, Award, Settings, Heart, Trophy, Medal } from "lucide-react";
+import { Card } from "@/components/ui/card";
 
 const Profile = () => {
   const [activeTab, setActiveTab] = useState("posts");
   const user = currentUser;
   const userPosts = mockPosts.filter((post) => post.user.id === user.id);
   
+  const getAchievementIcon = (icon?: "trophy" | "medal" | "award") => {
+    switch (icon) {
+      case "trophy":
+        return <Trophy size={16} className="text-sport-orange" />;
+      case "medal":
+        return <Medal size={16} className="text-sport-green" />;
+      case "award":
+      default:
+        return <Award size={16} className="text-sport-blue" />;
+    }
+  };
+  
   return (
     <MobileLayout>
       <div className="flex flex-col">
         {/* Profile Header */}
         <div className="relative">
-          {/* Cover Photo */}
           <div className="h-32 bg-gradient-to-r from-sport-blue via-sport-green to-sport-orange"></div>
           
-          {/* Profile Picture */}
           <div className="absolute bottom-0 left-4 transform translate-y-1/2 border-4 border-background rounded-full">
             <Avatar className="w-20 h-20">
               <AvatarImage src={user.avatar} alt={user.name} />
@@ -29,7 +39,6 @@ const Profile = () => {
             </Avatar>
           </div>
           
-          {/* Actions */}
           <div className="absolute bottom-0 right-4 transform translate-y-1/2 flex space-x-2">
             <Button variant="outline" size="sm" className="rounded-full">
               <Settings size={16} className="mr-1" />
@@ -57,14 +66,15 @@ const Profile = () => {
           </div>
           <p className="text-muted-foreground">@{user.username}</p>
           
-          <div className="flex items-center space-x-2 mt-1">
+          <div className="flex flex-wrap gap-2 mt-1">
             <span className="bg-primary/10 text-primary text-xs py-1 px-2 rounded-full">
               {user.sport}
             </span>
-            <span className="flex items-center text-xs text-muted-foreground">
-              <Award size={14} className="mr-1 text-sport-orange" />
-              Athlete
-            </span>
+            {user.disciplines?.map((discipline) => (
+              <span key={discipline} className="bg-sport-blue/10 text-sport-blue text-xs py-1 px-2 rounded-full">
+                {discipline}
+              </span>
+            ))}
           </div>
           
           <p className="mt-2 text-foreground">{user.bio}</p>
@@ -79,6 +89,32 @@ const Profile = () => {
               <span className="text-muted-foreground ml-1">Followers</span>
             </div>
           </div>
+          
+          {user.achievements && (
+            <Card className="mt-4 p-4 bg-card/50">
+              <h3 className="text-sm font-semibold mb-3">Achievements</h3>
+              <div className="space-y-2">
+                {user.achievements.map((achievement, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    {getAchievementIcon(achievement.icon)}
+                    <span className="text-sm">{achievement.title}</span>
+                    <span className="text-xs text-muted-foreground ml-auto">{achievement.year}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+          
+          {user.stats && (
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              {user.stats.map((stat, index) => (
+                <div key={index} className="bg-card/50 rounded-lg p-3 text-center">
+                  <div className="text-lg font-semibold">{stat.value}</div>
+                  <div className="text-xs text-muted-foreground">{stat.label}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         
         {/* Profile Tabs */}

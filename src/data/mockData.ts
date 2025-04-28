@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   name: string;
@@ -9,6 +8,16 @@ export interface User {
   followers: number;
   following: number;
   isVerified?: boolean;
+  disciplines?: string[];
+  achievements?: {
+    title: string;
+    year: string;
+    icon?: "trophy" | "medal" | "award";
+  }[];
+  stats?: {
+    label: string;
+    value: string;
+  }[];
 }
 
 export interface Post {
@@ -35,7 +44,18 @@ export const currentUser: User = {
   sport: "Basketball",
   followers: 845,
   following: 231,
-  isVerified: true
+  isVerified: true,
+  disciplines: ["Point Guard", "Shooting Guard"],
+  achievements: [
+    { title: "NBA All-Star", year: "2024", icon: "trophy" },
+    { title: "League MVP", year: "2023", icon: "medal" },
+    { title: "Rookie of the Year", year: "2020", icon: "award" }
+  ],
+  stats: [
+    { label: "Points per game", value: "28.5" },
+    { label: "Assists", value: "9.2" },
+    { label: "Field goal %", value: "52.3" }
+  ]
 };
 
 export const mockUsers: User[] = [
