@@ -48,7 +48,6 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
     "Golf", "Baseball", "Swimming", "Athletics"
   ];
   
-  // Different sort options based on search type
   const sortOptions: Record<SearchType, { value: SortOption; label: string }[]> = {
     users: [
       { value: "relevance", label: "Relevance" },
@@ -67,7 +66,6 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
     ]
   };
   
-  // Different filter options based on search type
   const filterOptions: Record<SearchType, { value: FilterOption; label: string }[]> = {
     users: [
       { value: "all", label: "All Users" },
@@ -89,7 +87,6 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
 
   const handleFilterChange = (filter: FilterOption) => {
     if (filter === 'sport') {
-      // If sport is selected, keep isFilterOpen open for sport selection
       return;
     }
     onFilterChange(filter);

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Search, User, MessageSquare, Hash, X } from "lucide-react";
@@ -9,7 +8,7 @@ import {
   UserSearchResult, 
   PostSearchResult,
   HashtagSearchResult
-} from "@/services/searchService";
+} from "@/services/search";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -27,7 +26,6 @@ const SearchBar = ({
   value,
   onChange
 }: SearchBarProps) => {
-  // Use controlled or uncontrolled input based on props
   const isControlled = value !== undefined && onChange !== undefined;
   const [query, setQuery] = useState(value || "");
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -36,14 +34,12 @@ const SearchBar = ({
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   
-  // Update internal state when controlled value changes
   useEffect(() => {
     if (isControlled && value !== query) {
       setQuery(value);
     }
   }, [value, isControlled]);
 
-  // Handle click outside to close results
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
@@ -57,7 +53,6 @@ const SearchBar = ({
     };
   }, []);
   
-  // Handle search when query changes
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (query.length >= 2) {
@@ -201,7 +196,6 @@ const SearchBar = ({
         )}
       </div>
       
-      {/* Search results dropdown */}
       {showResults && (
         <div className="absolute mt-1 w-full bg-background border border-border rounded-md shadow-lg z-50 max-h-[70vh] overflow-y-auto">
           {isSearching ? (

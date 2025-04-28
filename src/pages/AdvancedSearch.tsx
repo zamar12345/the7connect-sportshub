@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import SearchBar from "@/components/SearchBar";
@@ -9,7 +8,7 @@ import {
   UserSearchResult, 
   PostSearchResult, 
   HashtagSearchResult 
-} from "@/services/searchService";
+} from "@/services/search";
 import { useLocation, useNavigate } from "react-router-dom";
 import AdvancedSearchFilters from "@/components/AdvancedSearchFilters";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -36,7 +35,6 @@ const AdvancedSearch = () => {
   const navigate = useNavigate();
   const queryParams = new URLSearchParams(location.search);
   
-  // Initialize state from URL parameters
   const [searchState, setSearchState] = useState<SearchState>({
     query: queryParams.get("q") || "",
     type: (queryParams.get("type") as "users" | "posts" | "hashtags") || "users",
@@ -50,7 +48,6 @@ const AdvancedSearch = () => {
   const [hashtags, setHashtags] = useState<HashtagSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   
-  // Update URL when search state changes
   useEffect(() => {
     const params = new URLSearchParams();
     params.set("q", searchState.query);
@@ -62,7 +59,6 @@ const AdvancedSearch = () => {
     navigate(`/advanced-search?${params.toString()}`, { replace: true });
   }, [searchState, navigate]);
   
-  // Perform search when query or filters change
   useEffect(() => {
     const performSearch = async () => {
       if (!searchState.query || searchState.query.length < 2) return;
@@ -196,7 +192,6 @@ const AdvancedSearch = () => {
               <div className="space-y-4">
                 {posts.map((post) => (
                   <div key={post.id} className="mb-4">
-                    {/* Using the PostCard component */}
                     <PostCard 
                       post={{
                         id: post.id,
@@ -204,7 +199,6 @@ const AdvancedSearch = () => {
                         created_at: post.created_at,
                         user: {
                           id: post.user_id,
-                          name: post.username,
                           username: post.username,
                           avatar: post.avatar_url,
                           isVerified: false
