@@ -42,8 +42,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
+  const value = {
+    session,
+    user,
+    loading
+  };
+
   return (
-    <AuthContext.Provider value={{ session, user, loading }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
