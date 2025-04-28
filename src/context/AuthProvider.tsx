@@ -54,7 +54,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .eq('id', userId)
         .single();
         
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching user profile:", error);
+        return;
+      }
       
       if (data) setProfile(data as UserProfile);
     } catch (error) {
@@ -70,7 +73,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(currentSession?.user ?? null);
         
         if (currentSession?.user) {
-          await fetchUserProfile(currentSession.user.id);
+          // Use setTimeout to prevent potential recursion issues with Supabase client
+          setTimeout(() => {
+            fetchUserProfile(currentSession.user.id);
+          }, 0);
         } else {
           setProfile(null);
         }
