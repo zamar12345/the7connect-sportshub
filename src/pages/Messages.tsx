@@ -10,6 +10,14 @@ import { useAuth } from "@/context/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
+import DonateButton from "@/components/DonateButton";
+
+type ConversationParticipant = {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  username?: string | null;
+}
 
 type Conversation = {
   id: string;
@@ -105,7 +113,9 @@ const Messages = () => {
       if (recentConversations) {
         const formattedConversations = recentConversations.map(conv => {
           // Find the other participant (not the current user)
-          const otherParticipant = conv.participants.find(p => p.id !== user?.id);
+          const participants = conv.participants as ConversationParticipant[];
+          const otherParticipant = participants.find(p => p.id !== user?.id) || 
+            { id: 'unknown', full_name: 'Unknown User', avatar_url: '', username: null };
           
           return {
             id: conv.id,
@@ -113,7 +123,7 @@ const Messages = () => {
               id: otherParticipant.id,
               name: otherParticipant.full_name || 'Unknown User',
               avatar: otherParticipant.avatar_url || '',
-              username: otherParticipant.username
+              username: otherParticipant.username || undefined
             },
             lastMessage: conv.last_message || "Start a conversation",
             time: conv.last_message_at ? new Date(conv.last_message_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "now",
@@ -293,17 +303,10 @@ const Messages = () => {
                     {selectedConversation.user.username ? `@${selectedConversation.user.username}` : 'Online'}
                   </p>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="bg-sport-orange hover:bg-sport-orange/90 text-white rounded-full"
-                  onClick={() => {
-                    // Open donation dialog for this user
-                    window.location.href = `/profile?donate=${selectedConversation.user.id}`;
-                  }}
-                >
-                  Donate
-                </Button>
+                <DonateButton
+                  recipientId={selectedConversation.user.id}
+                  recipientName={selectedConversation.user.name}
+                />
               </div>
             </div>
           </div>
