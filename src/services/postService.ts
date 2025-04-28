@@ -8,8 +8,25 @@ interface FetchPostsOptions {
   following?: boolean;
 }
 
+// Define Post type to include likes_count and comments_count properties
+interface Post {
+  id: string;
+  content: string;
+  created_at: string;
+  image_url?: string;
+  user_id: string;
+  user: {
+    id: string;
+    username: string;
+    full_name: string;
+    avatar_url?: string;
+  };
+  likes_count?: number;
+  comments_count?: number;
+}
+
 // Fetch posts with user details and interaction counts
-export const fetchPosts = async (options: FetchPostsOptions = {}) => {
+export const fetchPosts = async (options: FetchPostsOptions = {}): Promise<Post[]> => {
   try {
     let query = supabase
       .from('posts')
@@ -56,7 +73,7 @@ export const fetchPosts = async (options: FetchPostsOptions = {}) => {
 };
 
 // Fetch posts from users the current user follows
-export const fetchFollowingPosts = async () => {
+export const fetchFollowingPosts = async (): Promise<Post[]> => {
   const { data: user } = await supabase.auth.getUser();
   
   if (!user.user) {
