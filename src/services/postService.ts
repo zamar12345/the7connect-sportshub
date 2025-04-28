@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 interface FetchPostsOptions {
@@ -60,12 +59,12 @@ export const fetchPosts = async (options: FetchPostsOptions = {}): Promise<Post[
       throw error;
     }
 
-    // Map the response to ensure likes_count and comments_count are defined
-    return data.map(post => ({
+    // Cast the response data to our Post type and ensure likes_count and comments_count are defined
+    return (data as any[]).map(post => ({
       ...post,
       likes_count: post.likes_count || 0,
       comments_count: post.comments_count || 0
-    }));
+    })) as Post[];
   } catch (error) {
     console.error("Error fetching posts:", error);
     throw error;
@@ -111,12 +110,12 @@ export const fetchFollowingPosts = async (): Promise<Post[]> => {
       throw error;
     }
     
-    // Ensure likes_count and comments_count are defined
-    return data.map(post => ({
+    // Cast the response data to our Post type and ensure likes_count and comments_count are defined
+    return (data as any[]).map(post => ({
       ...post,
       likes_count: post.likes_count || 0,
       comments_count: post.comments_count || 0
-    }));
+    })) as Post[];
   } catch (error) {
     console.error("Error fetching following posts:", error);
     throw error;
