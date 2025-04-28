@@ -97,21 +97,26 @@ export const searchAll = async (query: string): Promise<SearchResult[]> => {
     if (query.startsWith('#') || query.length > 2) {
       const searchTag = query.startsWith('#') ? query.slice(1) : query;
       
-      // Search posts with hashtags
-      const { data: hashtagPosts, error: hashtagError } = await supabase.rpc(
-        'search_posts_by_hashtag',
-        { search_term: searchTag }
-      );
+      // Search posts with hashtags that might contain the search term
+      const { data: hashtagPosts, error: hashtagError } = await supabase
+        .from('posts')
+        .select('id, content')
+        .ilike('content', `%#${searchTag}%`)
+        .limit(20);
       
-      if (!hashtagError && hashtagPosts && hashtagPosts.length > 0) {
-        // Group by hashtag
+      if (!hashtagError && hashtagPosts) {
+        // Parse hashtags from content
         const hashtags: Record<string, number> = {};
         
-        hashtagPosts.forEach((post: any) => {
-          const tags = (post.hashtags || []);
-          tags.forEach((tag: string) => {
-            if (tag.toLowerCase().includes(searchTag.toLowerCase())) {
-              hashtags[tag] = (hashtags[tag] || 0) + 1;
+        hashtagPosts.forEach(post => {
+          // Simple regex to extract hashtags
+          const tags = post.content.match(/#(\w+)/g) || [];
+          
+          // Convert #tag to tag and count occurrences
+          tags.forEach(tag => {
+            const cleanTag = tag.substring(1).toLowerCase(); // Remove # and convert to lowercase
+            if (cleanTag.includes(searchTag.toLowerCase())) {
+              hashtags[cleanTag] = (hashtags[cleanTag] || 0) + 1;
             }
           });
         });
@@ -196,25 +201,43 @@ export const searchPosts = async (query: string): Promise<PostSearchResult[]> =>
   }
 };
 
-// This is a placeholder function - Supabase would need a dedicated function or hashtags table for this
+// Search hashtags (simplified implementation)
 export const searchHashtags = async (query: string): Promise<HashtagSearchResult[]> => {
   if (!query || query.length < 2) return [];
   const searchTag = query.startsWith('#') ? query.slice(1) : query;
   
   try {
-    // This is a simplified approach - in production, you would likely have a hashtags table
-    const { data, error } = await supabase.rpc(
-      'search_hashtags',
-      { search_term: searchTag }
-    );
+    // Simple implementation to search for hashtags in posts
+    const { data, error } = await supabase
+      .from('posts')
+      .select('content')
+      .ilike('content', `%#${searchTag}%`)
+      .limit(50);
     
     if (error) throw error;
     
-    return (data || []).map((item: any) => ({
-      id: item.hashtag,
+    // Extract and count hashtags
+    const hashtags: Record<string, number> = {};
+    
+    (data || []).forEach(post => {
+      // Simple regex to extract hashtags
+      const tags = post.content.match(/#(\w+)/g) || [];
+      
+      // Count occurrences
+      tags.forEach(tag => {
+        const cleanTag = tag.substring(1).toLowerCase(); // Remove # and convert to lowercase
+        if (cleanTag.includes(searchTag.toLowerCase())) {
+          hashtags[cleanTag] = (hashtags[cleanTag] || 0) + 1;
+        }
+      });
+    });
+    
+    // Convert to result array
+    return Object.entries(hashtags).map(([tag, count]) => ({
+      id: tag,
       type: 'hashtag' as const,
-      name: item.hashtag,
-      post_count: item.count
+      name: tag,
+      post_count: count
     }));
   } catch (error: any) {
     console.error("Hashtag search error:", error);

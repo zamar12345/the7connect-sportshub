@@ -114,7 +114,8 @@ export const getUnreadNotificationsCount = async () => {
   }
 };
 
-// Register for push notifications
+// Store push subscription information in localStorage temporarily
+// This is a workaround since we don't have a push_subscriptions table yet
 export const registerForPushNotifications = async (subscription: PushSubscription) => {
   try {
     const userId = (await supabase.auth.getSession()).data.session?.user.id;
@@ -123,18 +124,17 @@ export const registerForPushNotifications = async (subscription: PushSubscriptio
       throw new Error('User is not authenticated');
     }
     
-    // Store the push subscription in the database
-    const { error } = await supabase
-      .from('push_subscriptions')
-      .upsert({
-        user_id: userId,
-        endpoint: subscription.endpoint,
-        p256dh: JSON.stringify(subscription.toJSON().keys?.p256dh),
-        auth: JSON.stringify(subscription.toJSON().keys?.auth),
-        created_at: new Date().toISOString()
-      });
+    // Store the push subscription in localStorage
+    const subscriptionData = {
+      user_id: userId,
+      endpoint: subscription.endpoint,
+      p256dh: subscription.toJSON().keys?.p256dh,
+      auth: subscription.toJSON().keys?.auth,
+      created_at: new Date().toISOString()
+    };
     
-    if (error) throw error;
+    // Save to localStorage (temporary solution)
+    localStorage.setItem('push_subscription', JSON.stringify(subscriptionData));
     
     return true;
   } catch (error: any) {
@@ -147,20 +147,8 @@ export const registerForPushNotifications = async (subscription: PushSubscriptio
 // Unregister from push notifications
 export const unregisterFromPushNotifications = async () => {
   try {
-    const userId = (await supabase.auth.getSession()).data.session?.user.id;
-    
-    if (!userId) {
-      throw new Error('User is not authenticated');
-    }
-    
-    // Remove the push subscription from the database
-    const { error } = await supabase
-      .from('push_subscriptions')
-      .delete()
-      .eq('user_id', userId);
-    
-    if (error) throw error;
-    
+    // Remove subscription from localStorage
+    localStorage.removeItem('push_subscription');
     return true;
   } catch (error: any) {
     console.error("Error unregistering from push notifications:", error);
