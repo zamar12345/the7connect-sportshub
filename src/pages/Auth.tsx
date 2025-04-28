@@ -62,7 +62,7 @@ const Auth = () => {
           <div className="flex justify-center mb-4">
             <Logo />
           </div>
-          <h1 className="text-2xl font-bold">Welcome to Athletic Connect</h1>
+          <h1 className="text-2xl font-bold">Welcome to The7Connect</h1>
           <p className="text-muted-foreground">Sign in or create an account to get started</p>
         </div>
 
