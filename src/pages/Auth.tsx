@@ -1,17 +1,24 @@
 
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Navigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AuthContainer } from "@/components/auth/AuthContainer";
 import { SignInForm } from "@/components/auth/SignInForm";
 import { SignUpForm } from "@/components/auth/SignUpForm";
 import { ResetPasswordForm } from "@/components/auth/ResetPasswordForm";
+import { useAuth } from "@/context/AuthProvider";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [isResetMode, setIsResetMode] = useState(false);
   const [otp, setOtp] = useState("");
   const [searchParams] = useSearchParams();
+  const { user, loading } = useAuth();
+
+  // Redirect logged in users to home
+  if (user && !loading) {
+    return <Navigate to="/home" replace />;
+  }
 
   useEffect(() => {
     const reset = searchParams.get("reset");
