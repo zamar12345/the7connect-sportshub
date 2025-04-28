@@ -12,6 +12,7 @@ interface UserProfile {
   bio?: string;
   sport?: string;
   disciplines?: string[];
+  onboarding_completed?: boolean;
 }
 
 type AuthContextType = {
@@ -49,7 +50,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('id, username, full_name, avatar_url, bio, sport, disciplines')
+        .select('id, username, full_name, avatar_url, bio, sport, disciplines, onboarding_completed')
         .eq('id', userId)
         .single();
         

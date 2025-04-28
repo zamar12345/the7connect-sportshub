@@ -21,8 +21,15 @@ import DonationHistory from "@/pages/DonationHistory";
 import Settings from "@/pages/Settings";
 import AdvancedSearch from "@/pages/AdvancedSearch";
 
+// Import onboarding pages
+import Welcome from "@/pages/onboarding/Welcome";
+import ProfileSetup from "@/pages/onboarding/Profile";
+import Interests from "@/pages/onboarding/Interests";
+import Complete from "@/pages/onboarding/Complete";
+
 // Import components
 import ProtectedRoute from "@/components/ProtectedRoute";
+import OnboardingCheck from "@/components/OnboardingCheck";
 import "./App.css";
 
 function App() {
@@ -44,43 +51,93 @@ function App() {
     },
     {
       path: "/home",
-      element: <Home />,
+      element: (
+        <OnboardingCheck>
+          <Home />
+        </OnboardingCheck>
+      ),
     },
     {
       path: "/explore",
-      element: <Explore />,
+      element: (
+        <OnboardingCheck>
+          <Explore />
+        </OnboardingCheck>
+      ),
     },
     {
       path: "/notifications",
-      element: <Notifications />,
+      element: (
+        <OnboardingCheck>
+          <Notifications />
+        </OnboardingCheck>
+      ),
     },
     {
       path: "/messages",
-      element: <ProtectedRoute><Messages /></ProtectedRoute>,
+      element: (
+        <ProtectedRoute>
+          <OnboardingCheck>
+            <Messages />
+          </OnboardingCheck>
+        </ProtectedRoute>
+      ),
     },
     {
       path: "/profile",
-      element: <ProtectedRoute><Profile /></ProtectedRoute>,
+      element: (
+        <ProtectedRoute>
+          <OnboardingCheck>
+            <Profile />
+          </OnboardingCheck>
+        </ProtectedRoute>
+      ),
     },
     {
       path: "/profile/:id",
-      element: <Profile />,
+      element: (
+        <OnboardingCheck>
+          <Profile />
+        </OnboardingCheck>
+      ),
     },
     {
       path: "/compose",
-      element: <ProtectedRoute><Compose /></ProtectedRoute>,
+      element: (
+        <ProtectedRoute>
+          <OnboardingCheck>
+            <Compose />
+          </OnboardingCheck>
+        </ProtectedRoute>
+      ),
     },
     {
       path: "/donation-history",
-      element: <ProtectedRoute><DonationHistory /></ProtectedRoute>,
+      element: (
+        <ProtectedRoute>
+          <OnboardingCheck>
+            <DonationHistory />
+          </OnboardingCheck>
+        </ProtectedRoute>
+      ),
     },
     {
       path: "/settings",
-      element: <ProtectedRoute><Settings /></ProtectedRoute>,
+      element: (
+        <ProtectedRoute>
+          <OnboardingCheck>
+            <Settings />
+          </OnboardingCheck>
+        </ProtectedRoute>
+      ),
     },
     {
       path: "/advanced-search",
-      element: <AdvancedSearch />,
+      element: (
+        <OnboardingCheck>
+          <AdvancedSearch />
+        </OnboardingCheck>
+      ),
     },
     {
       path: "/auth",
@@ -89,6 +146,23 @@ function App() {
     {
       path: "/donation-success",
       element: <DonationSuccess />
+    },
+    // Onboarding Routes
+    {
+      path: "/onboarding/welcome",
+      element: <ProtectedRoute><Welcome /></ProtectedRoute>,
+    },
+    {
+      path: "/onboarding/profile",
+      element: <ProtectedRoute><ProfileSetup /></ProtectedRoute>,
+    },
+    {
+      path: "/onboarding/interests",
+      element: <ProtectedRoute><Interests /></ProtectedRoute>,
+    },
+    {
+      path: "/onboarding/complete",
+      element: <ProtectedRoute><Complete /></ProtectedRoute>,
     }
   ]);
 

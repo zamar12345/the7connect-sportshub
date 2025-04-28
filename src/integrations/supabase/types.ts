@@ -420,6 +420,44 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_steps: {
+        Row: {
+          created_at: string | null
+          id: string
+          interests_completed: boolean | null
+          profile_completed: boolean | null
+          updated_at: string | null
+          user_id: string
+          welcome_completed: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          interests_completed?: boolean | null
+          profile_completed?: boolean | null
+          updated_at?: string | null
+          user_id: string
+          welcome_completed?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          interests_completed?: boolean | null
+          profile_completed?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+          welcome_completed?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_steps_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           buyer_id: string
@@ -521,6 +559,7 @@ export type Database = {
           following: number | null
           full_name: string | null
           id: string
+          onboarding_completed: boolean | null
           sport: string | null
           stats: Json | null
           username: string
@@ -535,6 +574,7 @@ export type Database = {
           following?: number | null
           full_name?: string | null
           id?: string
+          onboarding_completed?: boolean | null
           sport?: string | null
           stats?: Json | null
           username: string
@@ -549,6 +589,7 @@ export type Database = {
           following?: number | null
           full_name?: string | null
           id?: string
+          onboarding_completed?: boolean | null
           sport?: string | null
           stats?: Json | null
           username?: string
