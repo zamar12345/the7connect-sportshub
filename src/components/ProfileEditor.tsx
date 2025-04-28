@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthProvider";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,7 @@ const ProfileEditor = ({ onClose }: { onClose: () => void }) => {
   const [newDiscipline, setNewDiscipline] = useState("");
 
   // Fetch current profile data when component mounts
-  useState(() => {
+  useEffect(() => {
     const fetchProfile = async () => {
       if (!user) return;
       
