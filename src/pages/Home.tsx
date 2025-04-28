@@ -5,21 +5,23 @@ import PostCard from "@/components/PostCard";
 import StoriesRow from "@/components/StoriesRow";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchPosts } from "@/services/postService";
+import { fetchFollowingPosts } from "@/services/followService";
 import { useAuth } from "@/context/AuthProvider";
 import { toast } from "sonner";
 
 const Home = () => {
   const [activeTab, setActiveTab] = useState("forYou");
-  const [posts, setPosts] = useState([]);
+  const [forYouPosts, setForYouPosts] = useState([]);
+  const [followingPosts, setFollowingPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   
   useEffect(() => {
-    const getPosts = async () => {
+    const getForYouPosts = async () => {
       try {
         setLoading(true);
         const postsData = await fetchPosts();
-        setPosts(postsData);
+        setForYouPosts(postsData);
       } catch (error: any) {
         console.error("Error fetching posts:", error);
         toast.error(`Error loading posts: ${error.message}`);
@@ -28,8 +30,28 @@ const Home = () => {
       }
     };
     
-    getPosts();
+    getForYouPosts();
   }, []);
+  
+  useEffect(() => {
+    // Only fetch following posts if user is logged in and the following tab is active
+    if (user && activeTab === "following") {
+      const getFollowingPosts = async () => {
+        try {
+          setLoading(true);
+          const postsData = await fetchFollowingPosts();
+          setFollowingPosts(postsData);
+        } catch (error: any) {
+          console.error("Error fetching following posts:", error);
+          toast.error(`Error loading following feed: ${error.message}`);
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      getFollowingPosts();
+    }
+  }, [user, activeTab]);
   
   return (
     <MobileLayout>
@@ -65,9 +87,9 @@ const Home = () => {
                   <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
                   <p className="text-muted-foreground">Loading posts...</p>
                 </div>
-              ) : posts.length > 0 ? (
+              ) : forYouPosts.length > 0 ? (
                 <div className="divide-y divide-border">
-                  {posts.map((post) => (
+                  {forYouPosts.map((post) => (
                     <PostCard key={post.id} post={post} />
                   ))}
                 </div>
@@ -82,12 +104,32 @@ const Home = () => {
             </TabsContent>
             
             <TabsContent value="following" className="pt-1 mt-0">
-              <div className="flex flex-col items-center justify-center p-8">
-                <p className="text-lg font-medium mb-2">Coming Soon</p>
-                <p className="text-muted-foreground text-center">
-                  The Following feed will be available soon.
-                </p>
-              </div>
+              {!user ? (
+                <div className="flex flex-col items-center justify-center p-8">
+                  <p className="text-lg font-medium mb-2">Sign in to see posts from people you follow</p>
+                  <p className="text-muted-foreground text-center">
+                    Create an account or sign in to view your personalized feed.
+                  </p>
+                </div>
+              ) : loading ? (
+                <div className="flex flex-col items-center justify-center p-8">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
+                  <p className="text-muted-foreground">Loading posts...</p>
+                </div>
+              ) : followingPosts.length > 0 ? (
+                <div className="divide-y divide-border">
+                  {followingPosts.map((post) => (
+                    <PostCard key={post.id} post={post} />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center p-8">
+                  <p className="text-lg font-medium mb-2">No posts yet</p>
+                  <p className="text-muted-foreground text-center mb-4">
+                    Follow some users to see their posts here!
+                  </p>
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </div>

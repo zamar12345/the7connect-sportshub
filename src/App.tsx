@@ -60,6 +60,10 @@ function App() {
           element: <ProtectedRoute><Profile /></ProtectedRoute>,
         },
         {
+          path: "/profile/:id",
+          element: <Profile />,
+        },
+        {
           path: "/compose",
           element: <ProtectedRoute><Compose /></ProtectedRoute>,
         },

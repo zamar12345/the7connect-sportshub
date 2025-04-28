@@ -1,8 +1,15 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
+interface FetchPostsOptions {
+  userId?: string;
+  limit?: number;
+  offset?: number;
+}
+
 // Fetch posts with user details and interaction counts
-export const fetchPosts = async () => {
-  const { data, error } = await supabase
+export const fetchPosts = async (options?: FetchPostsOptions) => {
+  let query = supabase
     .from('posts')
     .select(`
       *,
@@ -11,6 +18,21 @@ export const fetchPosts = async () => {
       user:users(id, username, full_name, avatar_url)
     `)
     .order('created_at', { ascending: false });
+    
+  // Add filters based on options
+  if (options?.userId) {
+    query = query.eq('user_id', options.userId);
+  }
+  
+  if (options?.limit) {
+    query = query.limit(options.limit);
+  }
+  
+  if (options?.offset) {
+    query = query.range(options.offset, options.offset + (options.limit || 10) - 1);
+  }
+  
+  const { data, error } = await query;
     
   if (error) {
     throw error;
@@ -98,4 +120,95 @@ export const fetchComments = async (postId: string) => {
   }
   
   return data;
+};
+
+// Create notification for likes
+export const createLikeNotification = async (postId: string) => {
+  const currentUser = (await supabase.auth.getSession()).data.session?.user;
+  
+  if (!currentUser) return;
+  
+  try {
+    // First get the post owner
+    const { data: post, error: postError } = await supabase
+      .from('posts')
+      .select('user_id')
+      .eq('id', postId)
+      .single();
+    
+    if (postError || !post || post.user_id === currentUser.id) return;
+    
+    // Create notification
+    await supabase
+      .from('notifications')
+      .insert({
+        user_id: post.user_id,
+        actor_id: currentUser.id,
+        type: 'like',
+        content: 'liked your post',
+        reference_id: postId
+      });
+  } catch (error) {
+    console.error("Error creating like notification:", error);
+  }
+};
+
+// Delete notification for likes
+export const deleteLikeNotification = async (postId: string) => {
+  const currentUser = (await supabase.auth.getSession()).data.session?.user;
+  
+  if (!currentUser) return;
+  
+  try {
+    // First get the post owner
+    const { data: post, error: postError } = await supabase
+      .from('posts')
+      .select('user_id')
+      .eq('id', postId)
+      .single();
+    
+    if (postError || !post) return;
+    
+    // Delete notification
+    await supabase
+      .from('notifications')
+      .delete()
+      .eq('user_id', post.user_id)
+      .eq('actor_id', currentUser.id)
+      .eq('type', 'like')
+      .eq('reference_id', postId);
+  } catch (error) {
+    console.error("Error deleting like notification:", error);
+  }
+};
+
+// Create notification for comments
+export const createCommentNotification = async (postId: string) => {
+  const currentUser = (await supabase.auth.getSession()).data.session?.user;
+  
+  if (!currentUser) return;
+  
+  try {
+    // First get the post owner
+    const { data: post, error: postError } = await supabase
+      .from('posts')
+      .select('user_id')
+      .eq('id', postId)
+      .single();
+    
+    if (postError || !post || post.user_id === currentUser.id) return;
+    
+    // Create notification
+    await supabase
+      .from('notifications')
+      .insert({
+        user_id: post.user_id,
+        actor_id: currentUser.id,
+        type: 'comment',
+        content: 'commented on your post',
+        reference_id: postId
+      });
+  } catch (error) {
+    console.error("Error creating comment notification:", error);
+  }
 };
