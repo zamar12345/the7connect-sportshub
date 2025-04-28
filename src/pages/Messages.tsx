@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { Input } from "@/components/ui/input";
 import { Search, Send, ArrowLeft } from "lucide-react";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
 
 type Conversation = {
   id: string;
@@ -40,6 +41,7 @@ const Messages = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (user) {
@@ -79,13 +81,52 @@ const Messages = () => {
     }
   }, [selectedConversation, user?.id]);
 
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   const fetchConversations = async () => {
     try {
       setLoading(true);
       
-      // This is a mockup of how we would fetch real data from Supabase
-      // In a real implementation, we would fetch from conversation_participants 
-      // table where user_id equals current user's ID
+      // In a real implementation, we would fetch actual conversations from the database
+      const { data: recentConversations, error } = await supabase
+        .from('conversation_details')
+        .select('*')
+        .eq('participants->0->id', user?.id)
+        .order('updated_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      if (recentConversations) {
+        const formattedConversations = recentConversations.map(conv => {
+          // Find the other participant (not the current user)
+          const otherParticipant = conv.participants.find(p => p.id !== user?.id);
+          
+          return {
+            id: conv.id,
+            user: {
+              id: otherParticipant.id,
+              name: otherParticipant.full_name || 'Unknown User',
+              avatar: otherParticipant.avatar_url || '',
+              username: otherParticipant.username
+            },
+            lastMessage: conv.last_message || "Start a conversation",
+            time: conv.last_message_at ? new Date(conv.last_message_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "now",
+            unread: conv.unread_count || 0
+          };
+        });
+        
+        setConversations(formattedConversations);
+      }
+    } catch (error: any) {
+      toast.error("Failed to load conversations: " + error.message);
+      
+      // Fallback to mock data if there's an error
       const { data: mockUsers } = await supabase
         .from('users')
         .select('id, full_name, avatar_url, username')
@@ -109,8 +150,6 @@ const Messages = () => {
         
         setConversations(mockConversations);
       }
-    } catch (error: any) {
-      toast.error("Failed to load conversations: " + error.message);
     } finally {
       setLoading(false);
     }
@@ -118,50 +157,67 @@ const Messages = () => {
 
   const fetchMessages = async (conversationId: string) => {
     try {
-      // In a real implementation, we would fetch from direct_messages table
-      // where conversation_id equals the selected conversation's ID
-      // This is mockup data to simulate messages
+      const { data: messagesData, error } = await supabase
+        .from('direct_messages')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true });
       
-      const mockMessages = [
-        {
-          id: "msg-1",
-          content: "Hi there! How are you doing?",
-          sender_id: selectedConversation?.user.id || "",
-          created_at: new Date(Date.now() - 3600000).toISOString(),
-          is_read: true
-        },
-        {
-          id: "msg-2",
-          content: "I'm doing great! Just finished training. How about you?",
-          sender_id: user?.id || "",
-          created_at: new Date(Date.now() - 3500000).toISOString(),
-          is_read: true
-        },
-        {
-          id: "msg-3",
-          content: "Getting ready for the tournament next weekend. Are you coming?",
-          sender_id: selectedConversation?.user.id || "",
-          created_at: new Date(Date.now() - 3400000).toISOString(),
-          is_read: true
-        }
-      ];
+      if (error) throw error;
       
-      setMessages(mockMessages);
+      if (messagesData && messagesData.length > 0) {
+        setMessages(messagesData);
+      } else {
+        // If no messages found, use mock data
+        const mockMessages = [
+          {
+            id: "msg-1",
+            content: "Hi there! How are you doing?",
+            sender_id: selectedConversation?.user.id || "",
+            created_at: new Date(Date.now() - 3600000).toISOString(),
+            is_read: true
+          },
+          {
+            id: "msg-2",
+            content: "I'm doing great! Just finished training. How about you?",
+            sender_id: user?.id || "",
+            created_at: new Date(Date.now() - 3500000).toISOString(),
+            is_read: true
+          },
+          {
+            id: "msg-3",
+            content: "Getting ready for the tournament next weekend. Are you coming?",
+            sender_id: selectedConversation?.user.id || "",
+            created_at: new Date(Date.now() - 3400000).toISOString(),
+            is_read: true
+          }
+        ];
+        
+        setMessages(mockMessages);
+      }
     } catch (error: any) {
       toast.error("Failed to load messages: " + error.message);
     }
   };
 
   const markMessagesAsRead = async (conversationId: string) => {
-    // In a real implementation, we would update is_read to true
-    // for all messages in the conversation where the current user is not the sender
-    // This is a mockup to simulate marking messages as read
-    
-    setConversations(prevConversations => 
-      prevConversations.map(conv => 
-        conv.id === conversationId ? { ...conv, unread: 0 } : conv
-      )
-    );
+    try {
+      // Call the Supabase function to mark messages as read
+      const { error } = await supabase.rpc('mark_messages_as_read', {
+        conversation_id_param: conversationId
+      });
+      
+      if (error) throw error;
+      
+      // Update the unread count in the UI
+      setConversations(prevConversations => 
+        prevConversations.map(conv => 
+          conv.id === conversationId ? { ...conv, unread: 0 } : conv
+        )
+      );
+    } catch (error: any) {
+      console.error("Error marking messages as read:", error);
+    }
   };
 
   const sendMessage = async () => {
@@ -171,30 +227,34 @@ const Messages = () => {
       setSendingMessage(true);
       
       // In a real implementation, we would insert into direct_messages table
-      // This is a mockup to simulate sending a message
+      const { data, error } = await supabase
+        .from('direct_messages')
+        .insert({
+          content: newMessage,
+          sender_id: user.id,
+          conversation_id: selectedConversation.id,
+          is_read: false
+        })
+        .select();
       
-      const newMsg = {
-        id: `msg-${Date.now()}`,
-        content: newMessage,
-        sender_id: user.id,
-        created_at: new Date().toISOString(),
-        is_read: false
-      };
+      if (error) throw error;
       
-      setMessages(prevMessages => [...prevMessages, newMsg]);
-      
-      // Update the conversation with the last message
-      setConversations(prevConversations => 
-        prevConversations.map(conv => 
-          conv.id === selectedConversation.id ? 
-          { ...conv, lastMessage: newMessage, time: "now" } : 
-          conv
-        )
-      );
+      // Update the local state
+      if (data) {
+        const newMsg = data[0];
+        setMessages(prevMessages => [...prevMessages, newMsg]);
+        
+        // Update the conversation with the last message
+        setConversations(prevConversations => 
+          prevConversations.map(conv => 
+            conv.id === selectedConversation.id ? 
+            { ...conv, lastMessage: newMessage, time: "now" } : 
+            conv
+          )
+        );
+      }
       
       setNewMessage("");
-      
-      // In a real implementation, we would update the conversation's last_message and last_message_at
     } catch (error: any) {
       toast.error("Failed to send message: " + error.message);
     } finally {
@@ -225,11 +285,26 @@ const Messages = () => {
               <AvatarImage src={selectedConversation.user.avatar} alt={selectedConversation.user.name} />
               <AvatarFallback>{selectedConversation.user.name[0]}</AvatarFallback>
             </Avatar>
-            <div className="ml-3">
-              <h3 className="font-medium text-base">{selectedConversation.user.name}</h3>
-              <p className="text-xs text-muted-foreground">
-                {selectedConversation.user.username ? `@${selectedConversation.user.username}` : 'Online'}
-              </p>
+            <div className="ml-3 flex-1">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="font-medium text-base">{selectedConversation.user.name}</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {selectedConversation.user.username ? `@${selectedConversation.user.username}` : 'Online'}
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-sport-orange hover:bg-sport-orange/90 text-white rounded-full"
+                  onClick={() => {
+                    // Open donation dialog for this user
+                    window.location.href = `/profile?donate=${selectedConversation.user.id}`;
+                  }}
+                >
+                  Donate
+                </Button>
+              </div>
             </div>
           </div>
           
@@ -246,7 +321,7 @@ const Messages = () => {
                     : 'bg-muted'
                   }`}
                 >
-                  <p>{message.content}</p>
+                  <p className="break-words whitespace-pre-wrap">{message.content}</p>
                   <p className={`text-xs mt-1 ${
                     message.sender_id === user?.id 
                     ? 'text-primary-foreground/70' 
@@ -257,25 +332,32 @@ const Messages = () => {
                 </div>
               </div>
             ))}
+            <div ref={messagesEndRef} />
           </div>
           
           <div className="border-t border-border p-4">
             <form 
-              className="flex items-center space-x-2" 
+              className="flex flex-col space-y-2" 
               onSubmit={(e) => { e.preventDefault(); sendMessage(); }}
             >
-              <Input 
-                value={newMessage} 
-                onChange={(e) => setNewMessage(e.target.value)} 
-                placeholder="Type a message..." 
-                className="flex-1" 
+              <Textarea
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="Type a message..."
+                className="resize-none min-h-[60px] max-h-[120px]"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                  }
+                }}
               />
               <Button 
                 type="submit" 
-                size="icon" 
+                className="self-end"
                 disabled={sendingMessage || !newMessage.trim()}
               >
-                <Send size={18} />
+                <Send size={18} className="mr-2" /> Send
               </Button>
             </form>
           </div>

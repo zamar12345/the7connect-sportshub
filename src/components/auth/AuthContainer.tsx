@@ -14,7 +14,7 @@ export const AuthContainer = ({ children, title, subtitle }: AuthContainerProps)
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
           <div className="flex justify-center mb-4">
-            <Logo className="h-6" />
+            <Logo className="h-4" />
           </div>
           <h1 className="text-2xl font-bold">{title}</h1>
           <p className="text-muted-foreground">{subtitle}</p>
