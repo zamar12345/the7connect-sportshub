@@ -59,7 +59,7 @@ const Auth = () => {
   return (
     <AuthContainer 
       title="Welcome to The7Connect"
-      subtitle="Sign in or create an account to get started"
+      subtitle="Where Talent Meets Opportunity."
     >
       {verificationSuccess && (
         <Alert className="mb-6 bg-green-50 border-green-200">
