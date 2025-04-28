@@ -4,9 +4,9 @@ import React from 'react';
 const Logo = ({ className = "" }: { className?: string }) => {
   return (
     <img 
-      src="/lovable-uploads/3a38b4d2-f711-49d6-ae36-c69a051450ba.png"
+      src="https://aatzzynkzgqizcovsvpp.supabase.co/storage/v1/object/public/public-images//WhatsApp%20Image%202025-04-28%20at%203.59.09%20PM.jpeg"
       alt="The7Connect Logo"
-      className={`h-4 w-auto ${className}`}
+      className={`h-8 w-auto ${className}`}
     />
   );
 };
