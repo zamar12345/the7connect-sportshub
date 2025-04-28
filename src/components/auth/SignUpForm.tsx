@@ -48,7 +48,8 @@ export const SignUpForm = () => {
     setLoading(true);
     
     try {
-      const { error } = await supabase.auth.signUp({
+      // Sign up the user with Supabase Auth
+      const { error: signUpError } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
         options: {
@@ -61,11 +62,12 @@ export const SignUpForm = () => {
         }
       });
       
-      if (error) throw error;
+      if (signUpError) throw signUpError;
       
       toast.success("Registration successful! Please check your email for verification.");
       form.reset();
     } catch (error: any) {
+      console.error("Sign up error:", error);
       toast.error(error.message || "Error during sign up");
     } finally {
       setLoading(false);
