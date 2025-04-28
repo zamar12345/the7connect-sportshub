@@ -21,44 +21,30 @@ import { toast } from "sonner";
 import PushNotificationToggle from "@/components/PushNotificationToggle";
 
 const Settings = () => {
-  const { user, signOut } = useAuth();
-  const [profile, setProfile] = useState<any>(null);
+  const { user, signOut, profile } = useAuth();
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   
   useEffect(() => {
-    if (user) {
-      fetchUserProfile();
+    if (!user) {
+      navigate('/auth');
     }
-  }, [user]);
-  
-  const fetchUserProfile = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', user?.id)
-        .single();
-        
-      if (error) throw error;
-      
-      setProfile(data);
-    } catch (error) {
-      console.error("Error fetching profile:", error);
-    }
-  };
+  }, [user, navigate]);
   
   const handleSignOut = async () => {
     try {
+      setLoading(true);
       await signOut();
       toast.success("Signed out successfully");
-      navigate('/');
+      navigate('/auth');
     } catch (error: any) {
       toast.error(`Error signing out: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
-  
-  if (!user) {
-    navigate('/auth');
+
+  if (!user || !profile) {
     return null;
   }
 
@@ -67,33 +53,31 @@ const Settings = () => {
       <div className="container max-w-md mx-auto p-4">
         <h1 className="text-2xl font-bold mb-6">Settings</h1>
         
-        {profile && (
-          <Card className="mb-6">
-            <CardContent className="pt-6">
-              <div className="flex items-center space-x-4">
-                <Avatar className="h-14 w-14">
-                  <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
-                  <AvatarFallback>
-                    <User size={24} />
-                  </AvatarFallback>
-                </Avatar>
-                
-                <div>
-                  <h2 className="font-semibold text-lg">{profile.full_name}</h2>
-                  <p className="text-muted-foreground">@{profile.username}</p>
-                </div>
-              </div>
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="flex items-center space-x-4">
+              <Avatar className="h-14 w-14">
+                <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
+                <AvatarFallback>
+                  <User size={24} />
+                </AvatarFallback>
+              </Avatar>
               
-              <Button 
-                variant="outline" 
-                className="w-full mt-4"
-                onClick={() => navigate('/profile/edit')}
-              >
-                Edit Profile
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+              <div>
+                <h2 className="font-semibold text-lg">{profile.full_name}</h2>
+                <p className="text-muted-foreground">@{profile.username}</p>
+              </div>
+            </div>
+            
+            <Button 
+              variant="outline" 
+              className="w-full mt-4"
+              onClick={() => navigate('/profile/edit')}
+            >
+              Edit Profile
+            </Button>
+          </CardContent>
+        </Card>
         
         <div className="space-y-4">
           <h2 className="font-semibold text-lg">Account</h2>
@@ -183,6 +167,7 @@ const Settings = () => {
               variant="outline" 
               className="w-full"
               onClick={handleSignOut}
+              disabled={loading}
             >
               <LogOut size={16} className="mr-2" /> Sign Out
             </Button>

@@ -17,6 +17,7 @@ import Compose from "@/pages/Compose";
 import NotFound from "@/pages/NotFound";
 import DonationSuccess from "@/pages/DonationSuccess";
 import DonationHistory from "@/pages/DonationHistory";
+import Settings from "@/pages/Settings";
 
 // Import components
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -70,6 +71,10 @@ function App() {
     {
       path: "/donation-history",
       element: <ProtectedRoute><DonationHistory /></ProtectedRoute>,
+    },
+    {
+      path: "/settings",
+      element: <ProtectedRoute><Settings /></ProtectedRoute>,
     },
     {
       path: "/auth",
