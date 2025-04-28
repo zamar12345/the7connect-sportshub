@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -28,7 +27,7 @@ import {
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Mail, Lock, Github, Twitter } from "lucide-react";
+import { Mail, Lock, Github, Twitter, Facebook, Instagram } from "lucide-react";
 
 const passwordResetSchema = z.object({
   email: z.string().email("Please enter a valid email address")
@@ -53,7 +52,6 @@ const Auth = () => {
   const [searchParams] = useSearchParams();
   const { resetPassword, verifyOtp, updatePassword } = useAuth();
 
-  // Form for password reset request
   const resetForm = useForm<z.infer<typeof passwordResetSchema>>({
     resolver: zodResolver(passwordResetSchema),
     defaultValues: {
@@ -61,7 +59,6 @@ const Auth = () => {
     }
   });
 
-  // Form for setting new password
   const newPasswordForm = useForm<z.infer<typeof passwordUpdateSchema>>({
     resolver: zodResolver(passwordUpdateSchema),
     defaultValues: {
@@ -71,7 +68,6 @@ const Auth = () => {
   });
 
   useEffect(() => {
-    // Check if user came from password reset email
     const reset = searchParams.get("reset");
     if (reset === "true") {
       setIsResetMode(true);
@@ -131,7 +127,6 @@ const Auth = () => {
       await resetPassword(values.email);
       setResetDialogOpen(false);
     } catch (error) {
-      // Error is handled in resetPassword function
     }
   };
 
@@ -148,11 +143,10 @@ const Auth = () => {
       setIsResetMode(false);
       toast.success("Password has been reset successfully. Please sign in with your new password.");
     } catch (error) {
-      // Error is handled in verifyOtp and updatePassword functions
     }
   };
 
-  const handleSocialLogin = async (provider: 'github' | 'twitter') => {
+  const handleSocialLogin = async (provider: 'github' | 'twitter' | 'facebook' | 'instagram') => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
@@ -364,6 +358,25 @@ const Auth = () => {
                   <Twitter className="mr-2 h-4 w-4" /> Twitter
                 </Button>
               </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => handleSocialLogin('facebook')}
+                >
+                  <Facebook className="mr-2 h-4 w-4" /> Facebook
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => handleSocialLogin('instagram')}
+                >
+                  <Instagram className="mr-2 h-4 w-4" /> Instagram
+                </Button>
+              </div>
             </form>
           </TabsContent>
           
@@ -427,6 +440,25 @@ const Auth = () => {
                   onClick={() => handleSocialLogin('twitter')}
                 >
                   <Twitter className="mr-2 h-4 w-4" /> Twitter
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => handleSocialLogin('facebook')}
+                >
+                  <Facebook className="mr-2 h-4 w-4" /> Facebook
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => handleSocialLogin('instagram')}
+                >
+                  <Instagram className="mr-2 h-4 w-4" /> Instagram
                 </Button>
               </div>
             </form>
