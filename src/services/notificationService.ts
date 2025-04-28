@@ -13,6 +13,12 @@ export const fetchNotifications = async () => {
       
     if (notificationsError) throw notificationsError;
     
+    // Initialize result with actor property to satisfy TypeScript
+    const result = notifications?.map(notification => ({
+      ...notification,
+      actor: null // Default actor value
+    })) || [];
+    
     // If we have notifications, fetch the actor details separately
     if (notifications && notifications.length > 0) {
       // Get unique actor IDs
@@ -30,28 +36,22 @@ export const fetchNotifications = async () => {
         if (actorsError) throw actorsError;
         
         // Map actors to notifications
-        return notifications.map(notification => {
-          if (notification.actor_id) {
-            const actor = actors?.find(a => a.id === notification.actor_id);
-            return {
-              ...notification,
-              actor: actor || { 
-                id: notification.actor_id,
-                username: 'unknown',
-                full_name: 'Unknown User',
-                avatar_url: null 
-              }
-            };
+        return result.map(notification => {
+          if (notification.actor_id && actors) {
+            const actor = actors.find(a => a.id === notification.actor_id);
+            if (actor) {
+              return {
+                ...notification,
+                actor: actor
+              };
+            }
           }
-          return {
-            ...notification,
-            actor: null
-          };
+          return notification; // Already has null actor
         });
       }
     }
     
-    return notifications || [];
+    return result;
   } catch (error: any) {
     console.error("Error fetching notifications:", error);
     toast.error(`Error: ${error.message}`);

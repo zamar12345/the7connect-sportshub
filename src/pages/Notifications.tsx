@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -13,7 +12,7 @@ interface NotificationActor {
   id: string;
   username: string;
   full_name?: string;
-  avatar_url?: string;
+  avatar_url?: string | null;
 }
 
 interface Notification {
@@ -42,7 +41,6 @@ const Notifications = () => {
     try {
       setLoading(true);
       const notificationsData = await fetchNotifications();
-      // Make TypeScript happy by explicitly casting the result
       setNotifications(notificationsData as Notification[]);
     } catch (error) {
       console.error("Error loading notifications:", error);
@@ -67,14 +65,12 @@ const Notifications = () => {
     try {
       await toggleFollow(actorId);
       toast.success("You are now following this user");
-      // Refresh notifications to update UI
       loadNotifications();
     } catch (error) {
       console.error("Error following user:", error);
     }
   };
 
-  // Format timestamp to a readable format
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
     const now = new Date();
