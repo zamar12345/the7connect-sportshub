@@ -23,7 +23,7 @@ export function useUserProfile(userId: string | undefined) {
       if (!userId) throw new Error("User ID is required");
       
       try {
-        // Update to explicitly list the columns we want to fetch, including banner_url
+        // First attempt to fetch with banner_url
         const { data, error } = await supabase
           .from("users")
           .select("id, username, full_name, avatar_url, banner_url, bio, sport, disciplines")
@@ -33,20 +33,35 @@ export function useUserProfile(userId: string | undefined) {
         if (error) {
           // Check if the error relates to the banner_url column not existing
           if (error.message.includes("column 'banner_url' does not exist")) {
-            // Fallback: Let's fetch without banner_url in this case
+            console.log("Banner URL column doesn't exist, falling back");
+            
+            // Fallback: fetch without banner_url in this case
             const { data: fallbackData, error: fallbackError } = await supabase
               .from("users")
               .select("id, username, full_name, avatar_url, bio, sport, disciplines")
               .eq("id", userId)
               .single();
               
-            if (fallbackError) throw fallbackError;
+            if (fallbackError) {
+              console.error("Fallback query failed:", fallbackError.message);
+              throw fallbackError;
+            }
+            
+            if (!fallbackData) {
+              throw new Error("No user data returned");
+            }
             
             // Return the data with a null banner_url
             return { ...fallbackData, banner_url: null } as User;
           }
           
+          // For other types of errors
+          console.error("Error in profile query:", error.message);
           throw error;
+        }
+        
+        if (!data) {
+          throw new Error("No user data returned");
         }
         
         return data as User;
