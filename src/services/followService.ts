@@ -1,6 +1,6 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { User } from "@/types/supabase";
 
 // Check if the current user is following a specific user
 export const checkFollowStatus = async (profileId: string): Promise<boolean> => {
@@ -131,24 +131,37 @@ async function updateCounter(userId: string, field: 'followers' | 'following', c
 }
 
 // Get list of users followed by the current user
-export const getFollowingList = async () => {
+export const getFollowingList = async (): Promise<User[]> => {
   try {
-    const { data, error } = await supabase
-      .from('follows')
-      .select(`
-        following_id,
-        users:following_id (
-          id,
-          username,
-          full_name,
-          avatar_url
-        )
-      `)
-      .eq('follower_id', (await supabase.auth.getSession()).data.session?.user.id);
-      
-    if (error) throw error;
+    const currentUserId = (await supabase.auth.getSession()).data.session?.user.id;
+    if (!currentUserId) {
+      throw new Error("User not authenticated");
+    }
     
-    return data.map(item => item.users);
+    // First get IDs of users that the current user follows
+    const { data: followsData, error: followsError } = await supabase
+      .from('follows')
+      .select('following_id')
+      .eq('follower_id', currentUserId);
+      
+    if (followsError) throw followsError;
+    
+    if (!followsData || followsData.length === 0) {
+      return []; // Not following anyone
+    }
+    
+    // Extract the user IDs
+    const followingIds = followsData.map(follow => follow.following_id);
+    
+    // Then fetch the user details for those IDs
+    const { data: usersData, error: usersError } = await supabase
+      .from('users')
+      .select('id, username, full_name, avatar_url')
+      .in('id', followingIds);
+    
+    if (usersError) throw usersError;
+    
+    return usersData || [];
   } catch (error: any) {
     console.error("Error fetching following list:", error);
     toast.error(`Error: ${error.message}`);
@@ -156,27 +169,33 @@ export const getFollowingList = async () => {
   }
 };
 
-// Get list of users following the current user
-export const getFollowersList = async (userId?: string) => {
-  const targetId = userId || (await supabase.auth.getSession()).data.session?.user.id;
-  
+// Get list of users following the specified user
+export const getFollowersList = async (userId: string): Promise<User[]> => {
   try {
-    const { data, error } = await supabase
+    // First get IDs of users that follow the specified user
+    const { data: followsData, error: followsError } = await supabase
       .from('follows')
-      .select(`
-        follower_id,
-        users:follower_id (
-          id,
-          username,
-          full_name,
-          avatar_url
-        )
-      `)
-      .eq('following_id', targetId);
+      .select('follower_id')
+      .eq('following_id', userId);
       
-    if (error) throw error;
+    if (followsError) throw followsError;
     
-    return data.map(item => item.users);
+    if (!followsData || followsData.length === 0) {
+      return []; // No followers
+    }
+    
+    // Extract the user IDs
+    const followerIds = followsData.map(follow => follow.follower_id);
+    
+    // Then fetch the user details for those IDs
+    const { data: usersData, error: usersError } = await supabase
+      .from('users')
+      .select('id, username, full_name, avatar_url')
+      .in('id', followerIds);
+    
+    if (usersError) throw usersError;
+    
+    return usersData || [];
   } catch (error: any) {
     console.error("Error fetching followers list:", error);
     toast.error(`Error: ${error.message}`);

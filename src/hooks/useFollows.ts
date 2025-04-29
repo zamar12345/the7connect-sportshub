@@ -3,13 +3,7 @@ import { useState } from "react";
 import { getFollowersList, getFollowingList } from "@/services/followService";
 import { useAuth } from "@/context/AuthProvider";
 import { toast } from "sonner";
-
-interface User {
-  id: string;
-  username?: string;
-  full_name?: string | null;
-  avatar_url?: string | null;
-}
+import { User } from "@/types/supabase";
 
 export function useFollows(userId?: string) {
   const [followers, setFollowers] = useState<User[]>([]);
