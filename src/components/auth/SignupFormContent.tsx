@@ -29,7 +29,7 @@ export const SignupFormContent = () => {
     console.log("Starting sign up process...");
     
     try {
-      const fullName = `${values.firstName} ${values.lastName}`;
+      const fullName = `${values.firstName} ${values.lastName}`.trim();
       const username = values.username;
       
       // Check if username already exists
@@ -49,19 +49,21 @@ export const SignupFormContent = () => {
         return;
       }
 
+      // Format user metadata properly as a plain object (not stringified JSON)
+      const userMetadata = {
+        first_name: values.firstName,
+        last_name: values.lastName,
+        full_name: fullName,
+        username: username
+      };
+
       // Create the user in the auth system with metadata
       const { data, error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth?verification=true`,
-          data: {
-            first_name: values.firstName,
-            last_name: values.lastName,
-            full_name: fullName,
-            username: username,
-            email: values.email
-          }
+          data: userMetadata
         }
       });
       
