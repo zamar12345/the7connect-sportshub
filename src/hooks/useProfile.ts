@@ -11,6 +11,7 @@ interface ProfileData {
   full_name: string;
   bio?: string;
   avatar_url?: string;
+  banner_url?: string;
   sport?: string;
   disciplines?: string[];
 }
@@ -23,7 +24,7 @@ export function useUserProfile(userId: string | undefined) {
       
       const { data, error } = await supabase
         .from("users")
-        .select("username, full_name, avatar_url, bio, sport, disciplines")
+        .select("username, full_name, avatar_url, banner_url, bio, sport, disciplines")
         .eq("id", userId)
         .single();
         
@@ -67,6 +68,49 @@ export function useUpdateProfile() {
     }
   });
   
+  // Upload banner mutation
+  const uploadBannerMutation = useMutation({
+    mutationFn: async ({ file, userId }: { file: File, userId: string }) => {
+      setUploading(true);
+      try {
+        const fileExt = file.name.split('.').pop();
+        const filePath = `banners/${userId}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+        
+        // Make sure the banners bucket exists
+        try {
+          const { data: bucketExists } = await supabase.storage
+            .getBucket('banners');
+            
+          if (!bucketExists) {
+            // Create bucket if it doesn't exist
+            await supabase.storage
+              .createBucket('banners', { public: true });
+          }
+        } catch (error) {
+          // If error is "bucket not found", we'll create it
+          await supabase.storage
+            .createBucket('banners', { public: true });
+        }
+        
+        const { error: uploadError } = await supabase.storage
+          .from('banners')
+          .upload(filePath, file);
+          
+        if (uploadError) throw uploadError;
+        
+        const { data } = supabase.storage
+          .from('banners')
+          .getPublicUrl(filePath);
+          
+        if (!data) throw new Error("Could not get public URL");
+        
+        return data.publicUrl;
+      } finally {
+        setUploading(false);
+      }
+    }
+  });
+  
   // Update profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: async ({ userId, profile }: { userId: string, profile: ProfileData}) => {
@@ -89,6 +133,7 @@ export function useUpdateProfile() {
   
   return {
     uploadAvatar: uploadAvatarMutation.mutate,
+    uploadBanner: uploadBannerMutation.mutate,
     isUploading: uploading,
     updateProfile: updateProfileMutation.mutate,
     isUpdating: updateProfileMutation.isPending

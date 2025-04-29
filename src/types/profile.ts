@@ -1,25 +1,13 @@
 
-export type Achievement = {
-  title: string;
-  year: string;
-  icon?: "trophy" | "medal" | "award";
-};
-
-export type Stat = {
-  label: string;
-  value: string | number;
-};
-
-export type ProfileData = {
+export interface ProfileData {
   id: string;
   username: string;
   full_name: string;
-  bio?: string;
   avatar_url?: string;
+  banner_url?: string;
+  bio?: string;
   sport?: string;
   disciplines?: string[];
   followers?: number;
   following?: number;
-  achievements?: Achievement[];
-  stats?: Stat[];
-};
+}

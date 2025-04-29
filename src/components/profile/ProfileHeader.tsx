@@ -26,7 +26,14 @@ const ProfileHeader = ({ profileData, onEditProfile }: ProfileHeaderProps) => {
   
   return (
     <div className="relative">
-      <div className="h-32 bg-gradient-to-r from-sport-blue via-sport-green to-sport-orange"></div>
+      <div 
+        className="h-32 bg-cover bg-center"
+        style={{
+          backgroundImage: profileData.banner_url 
+            ? `url(${profileData.banner_url})` 
+            : "linear-gradient(to right, var(--sport-blue), var(--sport-green), var(--sport-orange))"
+        }}
+      />
       
       <div className="absolute bottom-0 left-4 transform translate-y-1/2 border-4 border-background rounded-full">
         <Avatar className="w-20 h-20">

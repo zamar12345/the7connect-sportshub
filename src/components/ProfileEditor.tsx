@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthProvider";
 import { useUserProfile, useUpdateProfile } from "@/hooks/useProfile";
@@ -6,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Label } from "@/components/ui/label";
-import { User } from "lucide-react";
+import { User, Image } from "lucide-react";
 import { User as UserType } from "@/types/supabase";
 
 type ProfileData = {
@@ -14,6 +15,7 @@ type ProfileData = {
   full_name: string;
   bio?: string;
   avatar_url?: string;
+  banner_url?: string;
   sport?: string;
   disciplines?: string[];
 };
@@ -25,13 +27,14 @@ const ProfileEditor = ({ onClose }: { onClose: () => void }) => {
     full_name: "",
     bio: "",
     avatar_url: "",
+    banner_url: "",
     sport: "",
     disciplines: []
   });
   const [newDiscipline, setNewDiscipline] = useState("");
   
   const { data: profile, isLoading } = useUserProfile(user?.id);
-  const { uploadAvatar, isUploading, updateProfile, isUpdating } = useUpdateProfile();
+  const { uploadAvatar, uploadBanner, isUploading, updateProfile, isUpdating } = useUpdateProfile();
 
   useEffect(() => {
     if (profile) {
@@ -41,6 +44,7 @@ const ProfileEditor = ({ onClose }: { onClose: () => void }) => {
         full_name: typedProfile.full_name || "",
         bio: typedProfile.bio || "",
         avatar_url: typedProfile.avatar_url || "",
+        banner_url: typedProfile.banner_url || "",
         sport: typedProfile.sport || "",
         disciplines: typedProfile.disciplines || []
       });
@@ -59,6 +63,17 @@ const ProfileEditor = ({ onClose }: { onClose: () => void }) => {
     uploadAvatar({ file, userId: user.id }, {
       onSuccess: (publicUrl) => {
         setFormData(prev => ({ ...prev, avatar_url: publicUrl }));
+      }
+    });
+  };
+  
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    
+    uploadBanner({ file, userId: user.id }, {
+      onSuccess: (publicUrl) => {
+        setFormData(prev => ({ ...prev, banner_url: publicUrl }));
       }
     });
   };
@@ -107,6 +122,33 @@ const ProfileEditor = ({ onClose }: { onClose: () => void }) => {
     <div className="p-4">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex flex-col items-center space-y-4 mb-6">
+          <div className="w-full mb-6 relative">
+            <div 
+              className="h-32 bg-cover bg-center rounded-md"
+              style={{
+                backgroundImage: formData.banner_url 
+                  ? `url(${formData.banner_url})`
+                  : "linear-gradient(to right, var(--sport-blue), var(--sport-green), var(--sport-orange))"
+              }}
+            >
+              <div className="absolute bottom-2 right-2">
+                <Label htmlFor="banner-upload" className="cursor-pointer">
+                  <div className="bg-primary text-white p-2 rounded-full hover:bg-primary/90">
+                    <Image className="h-4 w-4" />
+                  </div>
+                  <input
+                    id="banner-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleBannerUpload}
+                    className="hidden"
+                    disabled={isUploading}
+                  />
+                </Label>
+              </div>
+            </div>
+          </div>
+          
           <div className="relative">
             <Avatar className="w-24 h-24 border-4 border-background">
               {formData.avatar_url ? (
