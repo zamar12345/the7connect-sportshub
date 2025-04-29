@@ -44,22 +44,26 @@ export const uploadMedia = async ({ file, userId, onProgress }: UploadMediaOptio
     const mediaType = isImage ? 'images' : 'videos';
     const fileName = `${userId}/${mediaType}/${Date.now()}.${fileExt}`;
     
+    // Update progress to show upload has started
+    if (onProgress) {
+      onProgress(10);
+    }
+    
     // Upload to Supabase Storage
     const { data, error } = await supabase.storage
       .from('post-media')
       .upload(fileName, file, {
         cacheControl: '3600',
         upsert: false,
-        onUploadProgress: (progress) => {
-          if (onProgress) {
-            const percent = Math.round((progress.loaded / progress.total) * 100);
-            onProgress(percent);
-          }
-        },
       });
       
     if (error) {
       throw error;
+    }
+    
+    // Update progress to show upload is complete
+    if (onProgress) {
+      onProgress(100);
     }
     
     // Get the public URL
