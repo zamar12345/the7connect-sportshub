@@ -49,15 +49,15 @@ export const SignupFormContent = () => {
         return;
       }
 
-      // Create a plain JavaScript object for metadata (no nested structures)
-      const userMetadata = {
+      // Create a simple flat object with primitive values only
+      const metadata = {
         first_name: values.firstName,
         last_name: values.lastName,
         full_name: fullName,
         username: username
       };
       
-      console.log("Sending metadata:", userMetadata);
+      console.log("Sending metadata:", metadata);
 
       // Create the user in the auth system with metadata
       const { data, error } = await supabase.auth.signUp({
@@ -65,7 +65,7 @@ export const SignupFormContent = () => {
         password: values.password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth?verification=true`,
-          data: userMetadata
+          data: metadata
         }
       });
       
