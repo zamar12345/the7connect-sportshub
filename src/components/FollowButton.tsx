@@ -5,6 +5,7 @@ import { UserPlus, UserCheck } from "lucide-react";
 import { useAuth } from "@/context/AuthProvider";
 import { checkFollowStatus, toggleFollow } from "@/services/followService";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface FollowButtonProps {
   userId: string;
@@ -24,6 +25,7 @@ const FollowButton = ({
   const { user } = useAuth();
   const [isFollowing, setIsFollowing] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
+  const queryClient = useQueryClient();
   
   useEffect(() => {
     if (user && userId) {
@@ -59,6 +61,10 @@ const FollowButton = ({
       if (onFollowChange) {
         onFollowChange(newFollowStatus);
       }
+      
+      // Invalidate queries to refresh profile data
+      queryClient.invalidateQueries({ queryKey: ["users", "profile", userId] });
+      queryClient.invalidateQueries({ queryKey: ["users", "profile", user.id] });
       
       toast.success(newFollowStatus ? "Successfully followed user" : "Successfully unfollowed user");
     } catch (error) {
