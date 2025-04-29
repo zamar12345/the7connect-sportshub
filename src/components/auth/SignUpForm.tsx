@@ -52,7 +52,7 @@ export const SignUpForm = () => {
       const fullName = `${values.firstName} ${values.lastName}`;
       const username = values.email.split('@')[0];
       
-      // First, create the user in the auth system
+      // Create the user in the auth system with metadata
       const { data, error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
@@ -69,6 +69,25 @@ export const SignUpForm = () => {
       
       if (error) throw error;
       console.log("Auth signup successful:", data);
+      
+      // Manually create a user profile entry to ensure it exists
+      // This helps avoid the foreign key constraint issue with onboarding_steps
+      if (data.user) {
+        const { error: profileError } = await supabase
+          .from('users')
+          .insert({
+            id: data.user.id,
+            username: username,
+            full_name: fullName,
+          });
+          
+        if (profileError) {
+          console.error("Error creating user profile:", profileError);
+          // Continue anyway as AuthProvider will try to handle this as well
+        } else {
+          console.log("User profile created successfully");
+        }
+      }
 
       // User successfully created
       toast.success("Registration successful! Please check your email for verification.");
