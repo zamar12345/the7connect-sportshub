@@ -1,5 +1,5 @@
 
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
 import { AuthContext } from "./AuthContext";
@@ -7,7 +7,11 @@ import { useUserProfile } from "./useUserProfile";
 import { useAuthOperations } from "./useAuthOperations";
 import { UserProfile } from "./types";
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -79,8 +83,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     user,
     profile,
     loading,
-    isAuthenticated: !!user,  // Added this property
-    isLoading: loading,       // Added this property
+    isAuthenticated: !!user,
+    isLoading: loading,
     resetPassword,
     verifyOtp,
     updatePassword,

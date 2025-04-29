@@ -36,42 +36,18 @@ function AppRoutes() {
       
       {/* Protected routes */}
       <Route element={<ProtectedRoute />}>
-        <Route element={<OnboardingCheck>
-          <Home />
-        </OnboardingCheck>} path="/home" />
-        <Route element={<OnboardingCheck>
-          <Explore />
-        </OnboardingCheck>} path="/explore" />
-        <Route element={<OnboardingCheck>
-          <Notifications />
-        </OnboardingCheck>} path="/notifications" />
-        <Route element={<OnboardingCheck>
-          <Profile />
-        </OnboardingCheck>} path="/profile/:id" />
-        <Route element={<OnboardingCheck>
-          <ProfileEdit />
-        </OnboardingCheck>} path="/profile/edit" />
-        <Route element={<OnboardingCheck>
-          <DonationHistory />
-        </OnboardingCheck>} path="/donations/history" />
-        <Route element={<OnboardingCheck>
-          <DonationSuccess />
-        </OnboardingCheck>} path="/donations/success" />
-        <Route element={<OnboardingCheck>
-          <Messages />
-        </OnboardingCheck>} path="/messages" />
-        <Route element={<OnboardingCheck>
-          <Messages />
-        </OnboardingCheck>} path="/messages/:id" />
-        <Route element={<OnboardingCheck>
-          <Compose />
-        </OnboardingCheck>} path="/compose" />
-        <Route element={<OnboardingCheck>
-          <Settings />
-        </OnboardingCheck>} path="/settings" />
-        <Route element={<OnboardingCheck>
-          <AdvancedSearch />
-        </OnboardingCheck>} path="/search" />
+        <Route path="/home" element={<OnboardingCheck><Home /></OnboardingCheck>} />
+        <Route path="/explore" element={<OnboardingCheck><Explore /></OnboardingCheck>} />
+        <Route path="/notifications" element={<OnboardingCheck><Notifications /></OnboardingCheck>} />
+        <Route path="/profile/:id" element={<OnboardingCheck><Profile /></OnboardingCheck>} />
+        <Route path="/profile/edit" element={<OnboardingCheck><ProfileEdit /></OnboardingCheck>} />
+        <Route path="/donations/history" element={<OnboardingCheck><DonationHistory /></OnboardingCheck>} />
+        <Route path="/donations/success" element={<OnboardingCheck><DonationSuccess /></OnboardingCheck>} />
+        <Route path="/messages" element={<OnboardingCheck><Messages /></OnboardingCheck>} />
+        <Route path="/messages/:id" element={<OnboardingCheck><Messages /></OnboardingCheck>} />
+        <Route path="/compose" element={<OnboardingCheck><Compose /></OnboardingCheck>} />
+        <Route path="/settings" element={<OnboardingCheck><Settings /></OnboardingCheck>} />
+        <Route path="/search" element={<OnboardingCheck><AdvancedSearch /></OnboardingCheck>} />
         
         {/* Onboarding routes */}
         <Route path="/onboarding/welcome" element={<Welcome />} />
