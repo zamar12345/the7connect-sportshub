@@ -33,7 +33,8 @@ export type Post = {
   user_id: string;
   content: string;
   image_url?: string;
-  video_url?: string; // Added for video support
+  video_url?: string; 
+  location?: string; // Added for location support
   created_at: string;
   updated_at?: string;
   user?: User;

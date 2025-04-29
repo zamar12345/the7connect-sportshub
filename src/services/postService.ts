@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 interface FetchPostsOptions {
@@ -14,6 +15,7 @@ interface Post {
   created_at: string;
   image_url?: string;
   video_url?: string; // Added for video support
+  location?: string;  // Added for location support
   user_id: string;
   user: {
     id: string;
@@ -123,8 +125,13 @@ export const fetchFollowingPosts = async (): Promise<Post[]> => {
   }
 };
 
-// Create a new post with optional image and video
-export const createPost = async (content: string, imageUrl?: string, videoUrl?: string): Promise<Post | null> => {
+// Create a new post with optional image, video, and location
+export const createPost = async (
+  content: string, 
+  imageUrl?: string, 
+  videoUrl?: string,
+  location?: string
+): Promise<Post | null> => {
   try {
     const { data: session } = await supabase.auth.getSession();
     
@@ -141,7 +148,8 @@ export const createPost = async (content: string, imageUrl?: string, videoUrl?: 
         content,
         user_id: userId,
         image_url: imageUrl,
-        video_url: videoUrl
+        video_url: videoUrl,
+        location
       })
       .select(`
         *,
