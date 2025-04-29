@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
@@ -7,6 +6,7 @@ import { toast } from "sonner";
 interface UserProfile {
   id: string;
   username: string;
+  email?: string;
   full_name?: string;
   avatar_url?: string;
   bio?: string;
@@ -45,15 +45,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Create or fetch user profile
   const handleUserProfile = async (userId: string, userData?: any) => {
     try {
       console.log("Handling user profile for ID:", userId);
       
-      // First try to fetch existing profile
       const { data: existingProfile, error: fetchError } = await supabase
         .from('users')
-        .select('id, username, full_name, avatar_url, bio, sport, disciplines, onboarding_completed')
+        .select('id, username, email, full_name, avatar_url, bio, sport, disciplines, onboarding_completed')
         .eq('id', userId)
         .maybeSingle();
         
@@ -62,26 +60,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return null;
       }
       
-      // If profile exists, use it
       if (existingProfile) {
         console.log("Found existing user profile:", existingProfile);
         setProfile(existingProfile as UserProfile);
         return existingProfile;
       }
       
-      // If no profile, create one using metadata from the user
       console.log("No profile found, creating one with metadata:", userData);
       
       if (userData) {
-        // Extract data from user metadata
         const username = userData.username || userData.email?.split('@')[0] || `user_${Date.now()}`;
         const fullName = userData.full_name || `${userData.first_name || ''} ${userData.last_name || ''}`.trim();
+        const email = userData.email || null;
         
         const { data: newProfile, error: insertError } = await supabase
           .from('users')
           .insert({
             id: userId,
             username: username,
+            email: email,
             full_name: fullName || null,
           })
           .select()
@@ -107,7 +104,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     console.log("Setting up auth state listener");
     
-    // Set up auth state listener first to avoid missing events
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
         console.log("Auth state change event:", event, currentSession?.user?.id);
@@ -115,11 +111,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
-        // Only fetch/create profile for certain events
         if (currentSession?.user && ["SIGNED_IN", "TOKEN_REFRESHED", "USER_UPDATED"].includes(event)) {
-          // We use setTimeout to avoid potential recursive calls to Supabase client
           setTimeout(() => {
-            const metadata = currentSession.user.user_metadata;
+            const metadata = {
+              ...currentSession.user.user_metadata,
+              email: currentSession.user.email
+            };
             handleUserProfile(currentSession.user.id, metadata);
           }, 0);
         } else if (!currentSession) {
@@ -132,7 +129,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     );
 
-    // Then check for existing session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       console.log("Initial session check:", currentSession ? "Session found" : "No session");
       
@@ -140,7 +136,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(currentSession?.user ?? null);
       
       if (currentSession?.user) {
-        const metadata = currentSession.user.user_metadata;
+        const metadata = {
+          ...currentSession.user.user_metadata,
+          email: currentSession.user.email
+        };
         handleUserProfile(currentSession.user.id, metadata);
       }
       
@@ -150,7 +149,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Password reset functionality
   const resetPassword = async (email: string) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -166,7 +164,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Verify OTP for password reset
   const verifyOtp = async (email: string, token: string) => {
     try {
       const { error } = await supabase.auth.verifyOtp({
@@ -184,7 +181,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Update password
   const updatePassword = async (newPassword: string) => {
     try {
       const { error } = await supabase.auth.updateUser({
@@ -200,7 +196,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Sign out
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();

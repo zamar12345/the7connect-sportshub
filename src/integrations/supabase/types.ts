@@ -561,6 +561,7 @@ export type Database = {
           bio: string | null
           created_at: string | null
           disciplines: string[] | null
+          email: string | null
           followers: number | null
           following: number | null
           full_name: string | null
@@ -576,6 +577,7 @@ export type Database = {
           bio?: string | null
           created_at?: string | null
           disciplines?: string[] | null
+          email?: string | null
           followers?: number | null
           following?: number | null
           full_name?: string | null
@@ -591,6 +593,7 @@ export type Database = {
           bio?: string | null
           created_at?: string | null
           disciplines?: string[] | null
+          email?: string | null
           followers?: number | null
           following?: number | null
           full_name?: string | null

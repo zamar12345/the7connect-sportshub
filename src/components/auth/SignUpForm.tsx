@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -81,7 +80,8 @@ export const SignUpForm = () => {
             first_name: values.firstName,
             last_name: values.lastName,
             full_name: fullName,
-            username: username
+            username: username,
+            email: values.email
           }
         }
       });
