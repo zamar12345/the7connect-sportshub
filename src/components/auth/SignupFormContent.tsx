@@ -30,7 +30,7 @@ export const SignupFormContent = () => {
     
     try {
       const fullName = `${values.firstName} ${values.lastName}`.trim();
-      const username = values.username;
+      const username = values.username.trim();
       
       // Check if username already exists
       const { data: existingUsers, error: checkError } = await supabase
