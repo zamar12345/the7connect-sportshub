@@ -48,8 +48,12 @@ export const SignUpForm = () => {
     setLoading(true);
     
     try {
-      // Create the user in Supabase Auth system
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+      // Generate a username from email (before @ symbol)
+      const username = values.email.split('@')[0];
+      const fullName = `${values.firstName} ${values.lastName}`;
+      
+      // First, create the user in the auth system
+      const { data, error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
         options: {
@@ -57,34 +61,28 @@ export const SignUpForm = () => {
           data: {
             first_name: values.firstName,
             last_name: values.lastName,
-            full_name: `${values.firstName} ${values.lastName}`
+            full_name: fullName,
+            username: username
           }
         }
       });
       
-      if (signUpError) throw signUpError;
-      
-      // After successful signup, ensure the user record is created in public.users table
-      // Note: This may not be necessary as RLS policies and triggers should handle this automatically
-      if (authData?.user?.id) {
-        // Create entry in the users table if needed
-        const { error: profileError } = await supabase.from('users').upsert({
-          id: authData.user.id,
-          full_name: `${values.firstName} ${values.lastName}`,
-          username: values.email.split('@')[0], // Simple username based on email
-        }, { onConflict: 'id' });
-        
-        if (profileError) {
-          console.error("Error creating user profile:", profileError);
-          // Continue anyway as the user was created in auth system
-        }
-      }
-      
+      if (error) throw error;
+
+      // User successfully created
       toast.success("Registration successful! Please check your email for verification.");
       form.reset();
     } catch (error: any) {
       console.error("Sign up error:", error);
-      toast.error(error.message || "Error during sign up");
+      
+      // Display friendly error message based on error type
+      if (error.message.includes("already registered")) {
+        toast.error("This email is already registered. Please try logging in instead.");
+      } else if (error.message.includes("Password")) {
+        toast.error(error.message || "Password doesn't meet the requirements.");
+      } else {
+        toast.error(error.message || "Error during sign up. Please try again.");
+      }
     } finally {
       setLoading(false);
     }

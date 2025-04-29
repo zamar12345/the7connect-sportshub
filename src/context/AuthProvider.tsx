@@ -45,64 +45,101 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch user profile with error handling
-  const fetchUserProfile = async (userId: string) => {
+  // Create or fetch user profile
+  const handleUserProfile = async (userId: string, userData?: any) => {
     try {
-      const { data, error } = await supabase
+      // First try to fetch existing profile
+      const { data: existingProfile, error: fetchError } = await supabase
         .from('users')
         .select('id, username, full_name, avatar_url, bio, sport, disciplines, onboarding_completed')
         .eq('id', userId)
         .maybeSingle();
         
-      if (error) {
-        console.error("Error fetching user profile:", error);
+      if (fetchError && !fetchError.message.includes('No rows found')) {
+        console.error("Error fetching user profile:", fetchError);
         return null;
       }
       
-      if (data) {
-        setProfile(data as UserProfile);
-        return data;
+      // If profile exists, use it
+      if (existingProfile) {
+        console.log("Found existing user profile:", existingProfile);
+        setProfile(existingProfile as UserProfile);
+        return existingProfile;
+      }
+      
+      // If no profile, create one using metadata from the user
+      console.log("No profile found, creating one with metadata:", userData);
+      
+      if (userData) {
+        // Extract data from user metadata
+        const username = userData.username || userData.email?.split('@')[0] || `user_${Date.now()}`;
+        const fullName = userData.full_name || `${userData.first_name || ''} ${userData.last_name || ''}`.trim();
+        
+        const { data: newProfile, error: insertError } = await supabase
+          .from('users')
+          .insert({
+            id: userId,
+            username: username,
+            full_name: fullName || null,
+          })
+          .select()
+          .single();
+          
+        if (insertError) {
+          console.error("Error creating user profile:", insertError);
+          return null;
+        }
+        
+        console.log("Created new user profile:", newProfile);
+        setProfile(newProfile as UserProfile);
+        return newProfile;
       }
       
       return null;
     } catch (error) {
-      console.error("Exception fetching user profile:", error);
+      console.error("Exception handling user profile:", error);
       return null;
     }
   };
 
   useEffect(() => {
+    console.log("Setting up auth state listener");
+    
     // Set up auth state listener first to avoid missing events
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
-        console.log("Auth state change event:", event);
+      (event, currentSession) => {
+        console.log("Auth state change event:", event, currentSession?.user?.id);
+        
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
-        // Use setTimeout to prevent Supabase client recursion issues
-        if (currentSession?.user) {
+        // Only fetch/create profile for certain events
+        if (currentSession?.user && ["SIGNED_IN", "TOKEN_REFRESHED", "USER_UPDATED"].includes(event)) {
+          // We use setTimeout to avoid potential recursive calls to Supabase client
           setTimeout(() => {
-            fetchUserProfile(currentSession.user.id);
+            const metadata = currentSession.user.user_metadata;
+            handleUserProfile(currentSession.user.id, metadata);
           }, 0);
-        } else {
+        } else if (!currentSession) {
           setProfile(null);
         }
         
-        setLoading(false);
+        if (event !== "INITIAL_SESSION") {
+          setLoading(false);
+        }
       }
     );
 
     // Then check for existing session
-    supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       console.log("Initial session check:", currentSession ? "Session found" : "No session");
+      
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
       
       if (currentSession?.user) {
-        const profileData = await fetchUserProfile(currentSession.user.id);
-        if (!profileData) {
-          console.log("No profile found for user, may need to create one");
-        }
+        const metadata = currentSession.user.user_metadata;
+        handleUserProfile(currentSession.user.id, metadata);
       }
       
       setLoading(false);

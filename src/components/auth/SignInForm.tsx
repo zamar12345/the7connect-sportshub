@@ -53,17 +53,23 @@ export const SignInForm = () => {
     setLoading(true);
     
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       
       if (error) throw error;
       
+      console.log("Sign in successful, user data:", data);
       toast.success("Login successful!");
       navigate("/");
     } catch (error: any) {
-      toast.error(error.message || "Error during sign in");
+      console.error("Sign in error:", error);
+      if (error.message.includes("Invalid login")) {
+        toast.error("Invalid email or password. Please try again.");
+      } else {
+        toast.error(error.message || "Error during sign in");
+      }
     } finally {
       setLoading(false);
     }
