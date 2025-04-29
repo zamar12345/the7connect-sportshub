@@ -1,13 +1,20 @@
 
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Trophy, Medal, Award } from "lucide-react";
 import { ProfileData, Achievement } from "@/types/profile";
+import FollowList from "./FollowList";
+import { useFollows } from "@/hooks/useFollows";
 
 interface ProfileInfoProps {
   profileData: ProfileData;
 }
 
 const ProfileInfo = ({ profileData }: ProfileInfoProps) => {
+  const [showFollowers, setShowFollowers] = useState(false);
+  const [showFollowing, setShowFollowing] = useState(false);
+  const { followers, following, loadingFollowers, loadingFollowing, fetchFollowers, fetchFollowing } = useFollows(profileData.id);
+
   const getAchievementIcon = (icon?: "trophy" | "medal" | "award") => {
     switch (icon) {
       case "trophy":
@@ -18,6 +25,16 @@ const ProfileInfo = ({ profileData }: ProfileInfoProps) => {
       default:
         return <Award size={16} className="text-sport-blue" />;
     }
+  };
+
+  const handleOpenFollowers = () => {
+    fetchFollowers();
+    setShowFollowers(true);
+  };
+
+  const handleOpenFollowing = () => {
+    fetchFollowing();
+    setShowFollowing(true);
   };
 
   return (
@@ -43,15 +60,38 @@ const ProfileInfo = ({ profileData }: ProfileInfoProps) => {
       {profileData.bio && <p className="mt-2 text-foreground">{profileData.bio}</p>}
       
       <div className="flex space-x-4 mt-3">
-        <div>
+        <div 
+          className="cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={handleOpenFollowing}
+        >
           <span className="font-semibold">{profileData.following || 0}</span>
           <span className="text-muted-foreground ml-1">Following</span>
         </div>
-        <div>
+        <div 
+          className="cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={handleOpenFollowers}
+        >
           <span className="font-semibold">{profileData.followers || 0}</span>
           <span className="text-muted-foreground ml-1">Followers</span>
         </div>
       </div>
+      
+      {/* Follow Lists Modals */}
+      <FollowList
+        isOpen={showFollowers}
+        onClose={() => setShowFollowers(false)}
+        users={followers}
+        title="Followers"
+        loading={loadingFollowers}
+      />
+      
+      <FollowList
+        isOpen={showFollowing}
+        onClose={() => setShowFollowing(false)}
+        users={following}
+        title="Following"
+        loading={loadingFollowing}
+      />
       
       {profileData.achievements && profileData.achievements.length > 0 && (
         <Card className="mt-4 p-4 bg-card/50">
