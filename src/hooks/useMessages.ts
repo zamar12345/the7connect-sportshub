@@ -1,3 +1,4 @@
+
 import { useSupabaseQuery } from "./useSupabaseQuery";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,7 +33,7 @@ export function useMessageQuery(conversationId: string) {
       enabled: !!conversationId && isSubscribed,
       // Increase cache time to reduce refetching
       staleTime: 10000,
-      cacheTime: 30000,
+      gcTime: 30000, // Changed from cacheTime to gcTime
     }
   );
 }
@@ -158,7 +159,7 @@ export function useConversationsList() {
     {
       // Increase cache time to reduce refetching
       staleTime: 5000,
-      cacheTime: 30000,
+      gcTime: 30000, // Changed from cacheTime to gcTime
     }
   );
 }
