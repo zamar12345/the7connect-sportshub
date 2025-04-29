@@ -53,11 +53,11 @@ export function useUserProfile(userId: string | undefined) {
             
             // Return the data with a null banner_url
             return { ...fallbackData, banner_url: null } as User;
+          } else {
+            // For other types of errors
+            console.error("Error in profile query:", error.message);
+            throw error;
           }
-          
-          // For other types of errors
-          console.error("Error in profile query:", error.message);
-          throw error;
         }
         
         if (!data) {
