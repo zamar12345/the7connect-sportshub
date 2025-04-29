@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,8 @@ const signupSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   email: z.string().email("Please enter a valid email address"),
+  username: z.string().min(3, "Username must be at least 3 characters")
+    .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores"),
   password: z.string()
     .min(8, "Password must be at least 8 characters")
     .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/, "Password must contain at least one uppercase letter, one lowercase letter, and one number"),
@@ -38,6 +41,7 @@ export const SignUpForm = () => {
       firstName: "",
       lastName: "",
       email: "",
+      username: "",
       password: "",
       confirmPassword: ""
     }
@@ -49,7 +53,7 @@ export const SignUpForm = () => {
     
     try {
       const fullName = `${values.firstName} ${values.lastName}`;
-      let username = values.email.split('@')[0];
+      const username = values.username;
       
       // Check if username already exists
       const { data: existingUsers, error: checkError } = await supabase
@@ -63,14 +67,12 @@ export const SignUpForm = () => {
       }
       
       if (existingUsers) {
-        // Generate a unique username if the email username already exists
-        username = `${username}_${Math.floor(Math.random() * 1000)}`;
-        console.log(`Username already exists, using ${username} instead`);
+        toast.error("This username is already taken. Please choose another one.");
+        setLoading(false);
+        return;
       }
 
       // Create the user in the auth system with metadata
-      // With RLS properly configured, Supabase will automatically create the user profile
-      // when the auth user is created due to our trigger
       const { data, error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
@@ -143,6 +145,23 @@ export const SignUpForm = () => {
               )}
             />
           </div>
+
+          <FormField
+            control={form.control}
+            name="username"
+            render={({ field }) => (
+              <FormItem>
+                <div className="flex items-center space-x-2">
+                  <User className="text-muted-foreground w-5 h-5" />
+                  <FormControl>
+                    <Input placeholder="Username" id="signup-username" name="username" {...field} />
+                  </FormControl>
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           <FormField
             control={form.control}
             name="email"
