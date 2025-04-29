@@ -57,7 +57,7 @@ export const SignupFormContent = () => {
         username: username.trim()
       };
       
-      console.log("Sending metadata:", metadata);
+      console.log("🚨 Metadata being sent to Supabase:", metadata);
 
       // Create the user in the auth system with metadata
       const { data, error } = await supabase.auth.signUp({
