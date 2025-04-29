@@ -50,14 +50,9 @@ export const SignUpForm = () => {
     
     try {
       const fullName = `${values.firstName} ${values.lastName}`;
-      // Changed from const to let since we might need to modify it later
       let username = values.email.split('@')[0];
       
-      // First create the user profile to ensure it exists BEFORE auth signup
-      // This prevents the race condition with onboarding_steps
-      const tempUserId = crypto.randomUUID();
-      
-      // Check if email already exists
+      // Check if username already exists
       const { data: existingUsers, error: checkError } = await supabase
         .from('users')
         .select('id')
@@ -92,31 +87,12 @@ export const SignUpForm = () => {
       if (error) throw error;
       console.log("Auth signup successful:", data);
       
-      // Ensure the user profile exists (this is important for onboarding steps FK constraint)
+      // Wait for user creation to complete before trying to create related records
       if (data.user) {
-        const { error: profileError } = await supabase
-          .from('users')
-          .insert({
-            id: data.user.id,
-            username: username,
-            full_name: fullName,
-          });
-          
-        if (profileError) {
-          console.error("Error creating user profile:", profileError);
-          
-          // If the error is a duplicate key error, the profile already exists, which is fine
-          if (!profileError.message.includes('duplicate key')) {
-            toast.error("Could not complete profile setup. Please contact support.");
-          }
-        } else {
-          console.log("User profile created successfully");
-        }
+        // User successfully created
+        toast.success("Registration successful! Please check your email for verification.");
+        form.reset();
       }
-
-      // User successfully created
-      toast.success("Registration successful! Please check your email for verification.");
-      form.reset();
     } catch (error: any) {
       console.error("Sign up error:", error);
       
