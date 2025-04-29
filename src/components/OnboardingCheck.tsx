@@ -3,14 +3,14 @@ import { useEffect, useState, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
-import { User, OnboardingSteps } from "@/types/supabase";
+import { OnboardingSteps } from "@/types/supabase";
 
 interface OnboardingCheckProps {
   children: ReactNode;
 }
 
 const OnboardingCheck = ({ children }: OnboardingCheckProps) => {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [checkComplete, setCheckComplete] = useState(false);
   
@@ -64,12 +64,12 @@ const OnboardingCheck = ({ children }: OnboardingCheckProps) => {
       }
     };
     
-    if (!loading && user) {
+    if (user) {
       checkOnboarding();
-    } else if (!loading) {
+    } else {
       setCheckComplete(true);
     }
-  }, [user, loading, navigate]);
+  }, [user, navigate]);
   
   // Show a loading state while checking onboarding status
   if (!checkComplete && user) {

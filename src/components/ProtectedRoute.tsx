@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   
   const handleResendVerification = async () => {
     try {
@@ -30,17 +30,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       toast.error(error.message || "Error resending verification email");
     }
   };
-  
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-          <p className="text-muted-foreground">Loading your account...</p>
-        </div>
-      </div>
-    );
-  }
   
   if (!user) {
     return <Navigate to="/auth" replace />;
