@@ -22,13 +22,32 @@ export function useUserProfile(userId: string | undefined) {
     async () => {
       if (!userId) throw new Error("User ID is required");
       
+      // Update to explicitly list the columns we want to fetch, including banner_url
       const { data, error } = await supabase
         .from("users")
-        .select("username, full_name, avatar_url, banner_url, bio, sport, disciplines")
+        .select("id, username, full_name, avatar_url, banner_url, bio, sport, disciplines")
         .eq("id", userId)
         .single();
         
-      if (error) throw error;
+      if (error) {
+        // Check if the error relates to the banner_url column not existing
+        if (error.message.includes("column 'banner_url' does not exist")) {
+          // Fallback: Let's fetch without banner_url in this case
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from("users")
+            .select("id, username, full_name, avatar_url, bio, sport, disciplines")
+            .eq("id", userId)
+            .single();
+            
+          if (fallbackError) throw fallbackError;
+          
+          // Return the data with a null banner_url
+          return { ...fallbackData, banner_url: null } as User;
+        }
+        
+        throw error;
+      }
+      
       return data as User;
     },
     {
