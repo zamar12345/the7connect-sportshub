@@ -18,6 +18,8 @@ export interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
   loading: boolean;
+  isAuthenticated: boolean;  // Added this property
+  isLoading: boolean;        // Added this property
   resetPassword: (email: string) => Promise<void>;
   verifyOtp: (email: string, token: string) => Promise<void>;
   updatePassword: (newPassword: string) => Promise<void>;

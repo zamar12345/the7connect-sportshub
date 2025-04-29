@@ -79,6 +79,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     user,
     profile,
     loading,
+    isAuthenticated: !!user,  // Added this property
+    isLoading: loading,       // Added this property
     resetPassword,
     verifyOtp,
     updatePassword,
