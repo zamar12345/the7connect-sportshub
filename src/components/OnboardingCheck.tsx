@@ -1,12 +1,12 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { User, OnboardingSteps } from "@/types/supabase";
 
 interface OnboardingCheckProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 const OnboardingCheck = ({ children }: OnboardingCheckProps) => {
