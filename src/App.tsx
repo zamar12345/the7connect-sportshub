@@ -1,5 +1,5 @@
 
-import { Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import Index from "@/pages/Index";
 import Auth from "@/pages/Auth";
@@ -27,47 +27,77 @@ import { AuthProvider } from "@/context/AuthProvider";
 
 import "./App.css";
 
+function AppRoutes() {
+  return (
+    <Routes>
+      {/* Public routes */}
+      <Route path="/" element={<Index />} />
+      <Route path="/auth" element={<Auth />} />
+      
+      {/* Protected routes */}
+      <Route element={<ProtectedRoute />}>
+        <Route element={<OnboardingCheck>
+          <Home />
+        </OnboardingCheck>} path="/home" />
+        <Route element={<OnboardingCheck>
+          <Explore />
+        </OnboardingCheck>} path="/explore" />
+        <Route element={<OnboardingCheck>
+          <Notifications />
+        </OnboardingCheck>} path="/notifications" />
+        <Route element={<OnboardingCheck>
+          <Profile />
+        </OnboardingCheck>} path="/profile/:id" />
+        <Route element={<OnboardingCheck>
+          <ProfileEdit />
+        </OnboardingCheck>} path="/profile/edit" />
+        <Route element={<OnboardingCheck>
+          <DonationHistory />
+        </OnboardingCheck>} path="/donations/history" />
+        <Route element={<OnboardingCheck>
+          <DonationSuccess />
+        </OnboardingCheck>} path="/donations/success" />
+        <Route element={<OnboardingCheck>
+          <Messages />
+        </OnboardingCheck>} path="/messages" />
+        <Route element={<OnboardingCheck>
+          <Messages />
+        </OnboardingCheck>} path="/messages/:id" />
+        <Route element={<OnboardingCheck>
+          <Compose />
+        </OnboardingCheck>} path="/compose" />
+        <Route element={<OnboardingCheck>
+          <Settings />
+        </OnboardingCheck>} path="/settings" />
+        <Route element={<OnboardingCheck>
+          <AdvancedSearch />
+        </OnboardingCheck>} path="/search" />
+        
+        {/* Onboarding routes */}
+        <Route path="/onboarding/welcome" element={<Welcome />} />
+        <Route path="/onboarding/profile" element={<ProfileInfo />} />
+        <Route path="/onboarding/interests" element={<Interests />} />
+        <Route path="/onboarding/complete" element={<Complete />} />
+      </Route>
+      
+      {/* 404 page */}
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+}
+
 function App() {
   return (
-    <ThemeProvider defaultTheme="light" storageKey="the7connect-theme">
-      <QueryProvider>
-        <AuthProvider>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            
-            {/* Protected routes */}
-            <Route element={<ProtectedRoute />}>
-              <Route element={<OnboardingCheck />}>
-                <Route path="/home" element={<Home />} />
-                <Route path="/explore" element={<Explore />} />
-                <Route path="/notifications" element={<Notifications />} />
-                <Route path="/profile/:id" element={<Profile />} />
-                <Route path="/profile/edit" element={<ProfileEdit />} />
-                <Route path="/donations/history" element={<DonationHistory />} />
-                <Route path="/donations/success" element={<DonationSuccess />} />
-                <Route path="/messages" element={<Messages />} />
-                <Route path="/messages/:id" element={<Messages />} />
-                <Route path="/compose" element={<Compose />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/search" element={<AdvancedSearch />} />
-              </Route>
-              
-              {/* Onboarding routes */}
-              <Route path="/onboarding/welcome" element={<Welcome />} />
-              <Route path="/onboarding/profile" element={<ProfileInfo />} />
-              <Route path="/onboarding/interests" element={<Interests />} />
-              <Route path="/onboarding/complete" element={<Complete />} />
-            </Route>
-            
-            {/* 404 page */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <Toaster position="bottom-center" />
-        </AuthProvider>
-      </QueryProvider>
-    </ThemeProvider>
+    <BrowserRouter>
+      <ThemeProvider defaultTheme="light" storageKey="the7connect-theme">
+        <QueryProvider>
+          <AuthProvider>
+            <AppRoutes />
+            <Toaster position="bottom-center" />
+          </AuthProvider>
+        </QueryProvider>
+      </ThemeProvider>
+    </BrowserRouter>
   );
 }
 
