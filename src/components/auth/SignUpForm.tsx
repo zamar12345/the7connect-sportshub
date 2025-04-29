@@ -146,7 +146,7 @@ export const SignUpForm = () => {
                   <div className="flex items-center space-x-2">
                     <User className="text-muted-foreground w-5 h-5" />
                     <FormControl>
-                      <Input placeholder="First Name" {...field} />
+                      <Input placeholder="First Name" id="signup-firstName" name="firstName" {...field} />
                     </FormControl>
                   </div>
                   <FormMessage />
@@ -159,7 +159,7 @@ export const SignUpForm = () => {
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
-                    <Input placeholder="Last Name" {...field} />
+                    <Input placeholder="Last Name" id="signup-lastName" name="lastName" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -174,7 +174,7 @@ export const SignUpForm = () => {
                 <div className="flex items-center space-x-2">
                   <Mail className="text-muted-foreground w-5 h-5" />
                   <FormControl>
-                    <Input type="email" placeholder="Email" {...field} />
+                    <Input type="email" placeholder="Email" id="signup-email" name="email" {...field} />
                   </FormControl>
                 </div>
                 <FormMessage />
@@ -192,6 +192,8 @@ export const SignUpForm = () => {
                     <Input 
                       type="password" 
                       placeholder="Password (min 8 chars, 1 uppercase, 1 lowercase, 1 number)" 
+                      id="signup-password"
+                      name="password"
                       {...field} 
                     />
                   </FormControl>
@@ -211,6 +213,8 @@ export const SignUpForm = () => {
                     <Input 
                       type="password" 
                       placeholder="Confirm Password" 
+                      id="signup-confirmPassword"
+                      name="confirmPassword"
                       {...field} 
                     />
                   </FormControl>

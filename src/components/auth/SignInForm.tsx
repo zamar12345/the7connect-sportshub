@@ -92,6 +92,8 @@ export const SignInForm = () => {
         <div className="flex items-center space-x-2">
           <Mail className="text-muted-foreground w-5 h-5" />
           <Input
+            id="signin-email"
+            name="email"
             type="email"
             placeholder="Email"
             value={email}
@@ -102,6 +104,8 @@ export const SignInForm = () => {
         <div className="flex items-center space-x-2">
           <Lock className="text-muted-foreground w-5 h-5" />
           <Input
+            id="signin-password"
+            name="password"
             type="password"
             placeholder="Password"
             value={password}
@@ -132,7 +136,7 @@ export const SignInForm = () => {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter your email" {...field} />
+                          <Input id="reset-email" name="reset-email" placeholder="Enter your email" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

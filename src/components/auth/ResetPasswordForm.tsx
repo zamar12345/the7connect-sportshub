@@ -67,6 +67,8 @@ export const ResetPasswordForm = ({ email, otp, setEmail, setOtp }: ResetPasswor
     <div className="space-y-4">
       <div className="space-y-2">
         <Input
+          id="reset-form-email"
+          name="reset-form-email"
           type="email"
           placeholder="Email"
           value={email}
@@ -74,6 +76,8 @@ export const ResetPasswordForm = ({ email, otp, setEmail, setOtp }: ResetPasswor
           required
         />
         <Input
+          id="reset-form-otp"
+          name="reset-form-otp"
           type="text"
           placeholder="Verification Code"
           value={otp}
@@ -91,6 +95,8 @@ export const ResetPasswordForm = ({ email, otp, setEmail, setOtp }: ResetPasswor
               <FormItem>
                 <FormControl>
                   <Input
+                    id="reset-form-password"
+                    name="reset-form-password"
                     type="password"
                     placeholder="New Password"
                     {...field}
@@ -107,6 +113,8 @@ export const ResetPasswordForm = ({ email, otp, setEmail, setOtp }: ResetPasswor
               <FormItem>
                 <FormControl>
                   <Input
+                    id="reset-form-confirm-password"
+                    name="reset-form-confirm-password"
                     type="password"
                     placeholder="Confirm New Password"
                     {...field}
