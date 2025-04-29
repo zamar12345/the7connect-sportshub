@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthProvider";
 import { User } from "@/types/supabase";
@@ -10,6 +10,9 @@ import ProfileTabs from "@/components/profile/ProfileTabs";
 import { ProfileData } from "@/types/profile";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import MobileLayout from "@/components/layout/MobileLayout";
+import { ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const Profile = () => {
   const { id } = useParams<{ id?: string }>();
@@ -19,6 +22,7 @@ const Profile = () => {
   const [error, setError] = useState<string | null>(null);
   const [userPosts, setUserPosts] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("posts");
+  const navigate = useNavigate();
 
   // Fetch profile data
   useEffect(() => {
@@ -120,7 +124,7 @@ const Profile = () => {
 
   if (loading) {
     return (
-      <div className="container max-w-lg mx-auto pb-20">
+      <MobileLayout>
         <div className="h-32 bg-gradient-to-r from-muted via-muted to-muted animate-pulse"></div>
         <div className="p-4 mt-10">
           <Skeleton className="h-6 w-48 mb-2" />
@@ -131,42 +135,48 @@ const Profile = () => {
             <Skeleton className="h-32 w-full" />
           </div>
         </div>
-      </div>
+      </MobileLayout>
     );
   }
 
   if (error) {
     return (
-      <div className="container max-w-lg mx-auto py-10 text-center">
-        <h2 className="text-xl font-semibold mb-2">Error</h2>
-        <p className="text-muted-foreground">{error}</p>
-        <button 
-          onClick={() => window.history.back()} 
-          className="mt-4 px-4 py-2 bg-primary text-white rounded-md"
-        >
-          Go Back
-        </button>
-      </div>
+      <MobileLayout>
+        <div className="container max-w-lg mx-auto py-10 text-center">
+          <h2 className="text-xl font-semibold mb-2">Error</h2>
+          <p className="text-muted-foreground">{error}</p>
+          <Button 
+            onClick={() => navigate(-1)} 
+            className="mt-4 px-4 py-2"
+          >
+            <ArrowLeft size={16} className="mr-2" />
+            Go Back
+          </Button>
+        </div>
+      </MobileLayout>
     );
   }
 
   if (!profile || !profileData) {
     return (
-      <div className="container max-w-lg mx-auto py-10 text-center">
-        <h2 className="text-xl font-semibold mb-2">Profile Not Found</h2>
-        <p className="text-muted-foreground">The requested profile could not be found.</p>
-        <button 
-          onClick={() => window.history.back()} 
-          className="mt-4 px-4 py-2 bg-primary text-white rounded-md"
-        >
-          Go Back
-        </button>
-      </div>
+      <MobileLayout>
+        <div className="container max-w-lg mx-auto py-10 text-center">
+          <h2 className="text-xl font-semibold mb-2">Profile Not Found</h2>
+          <p className="text-muted-foreground">The requested profile could not be found.</p>
+          <Button 
+            onClick={() => navigate(-1)} 
+            className="mt-4 px-4 py-2"
+          >
+            <ArrowLeft size={16} className="mr-2" />
+            Go Back
+          </Button>
+        </div>
+      </MobileLayout>
     );
   }
 
   return (
-    <div className="container max-w-lg mx-auto pb-20">
+    <MobileLayout>
       <ProfileHeader 
         profileData={profileData} 
         onEditProfile={handleEditProfile} 
@@ -177,7 +187,7 @@ const Profile = () => {
         userPosts={userPosts} 
         onTabChange={handleTabChange}
       />
-    </div>
+    </MobileLayout>
   );
 };
 

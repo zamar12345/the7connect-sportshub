@@ -1,15 +1,19 @@
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import MobileLayout from "@/components/layout/MobileLayout";
 import PostCard from "@/components/PostCard";
 import StoriesRow from "@/components/StoriesRow";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePostsQuery, useFollowingPostsQuery } from "@/hooks/usePostsQuery";
 import { useAuth } from "@/context/AuthProvider";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
 const Home = () => {
   const [activeTab, setActiveTab] = useState("forYou");
   const { user } = useAuth();
+  const navigate = useNavigate();
   
   // Fetch "For You" posts
   const { 
@@ -33,6 +37,10 @@ const Home = () => {
     if (value === "following" && user) {
       refetchFollowingPosts();
     }
+  };
+
+  const handleCreatePost = () => {
+    navigate("/compose");
   };
   
   return (
@@ -116,6 +124,19 @@ const Home = () => {
           </Tabs>
         </div>
       </div>
+
+      {/* Floating Create Post Button */}
+      {user && (
+        <div className="fixed bottom-20 right-4">
+          <Button 
+            onClick={handleCreatePost}
+            size="icon" 
+            className="h-14 w-14 rounded-full shadow-lg bg-sport-green hover:bg-sport-green/90"
+          >
+            <Plus size={24} />
+          </Button>
+        </div>
+      )}
     </MobileLayout>
   );
 };
