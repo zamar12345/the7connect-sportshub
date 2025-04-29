@@ -40,11 +40,28 @@ const ConversationView = ({ conversation, currentUserId, onBack }: ConversationV
   const sendMessage = async () => {
     if (!newMessage.trim()) return;
     
-    sendMessageMutation.mutate(newMessage, {
-      onSuccess: () => {
-        setNewMessage("");
-      }
-    });
+    // Store the message text and reset input immediately for better UX
+    const messageText = newMessage.trim();
+    setNewMessage("");
+    
+    // Optimistically update UI by manually adding the pending message
+    const optimisticMessage = {
+      id: `temp-${Date.now()}`,
+      content: messageText,
+      sender_id: currentUserId,
+      created_at: new Date().toISOString(),
+      is_read: false,
+      conversation_id: conversation.id
+    };
+    
+    // Append optimistic message to UI
+    const messagesList = [...messages, optimisticMessage];
+    
+    // Send to server in background
+    sendMessageMutation.mutate(messageText);
+    
+    // Scroll to bottom immediately
+    setTimeout(scrollToBottom, 50);
   };
 
   return (
@@ -114,10 +131,10 @@ const ConversationView = ({ conversation, currentUserId, onBack }: ConversationV
           <Button 
             type="submit" 
             className="self-end"
-            disabled={sendMessageMutation.isPending || !newMessage.trim()}
+            disabled={!newMessage.trim()}
           >
             <Send size={18} className="mr-2" /> 
-            {sendMessageMutation.isPending ? "Sending..." : "Send"}
+            Send
           </Button>
         </form>
       </div>

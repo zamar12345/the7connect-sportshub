@@ -1,4 +1,3 @@
-
 import { useSupabaseQuery } from "./useSupabaseQuery";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,7 +29,10 @@ export function useMessageQuery(conversationId: string) {
       return data || [];
     },
     {
-      enabled: !!conversationId && isSubscribed
+      enabled: !!conversationId && isSubscribed,
+      // Increase cache time to reduce refetching
+      staleTime: 10000,
+      cacheTime: 30000,
     }
   );
 }
@@ -61,9 +63,16 @@ export function useSendMessage(conversationId: string, currentUserId: string) {
       
       return data?.[0];
     },
-    onSuccess: () => {
-      // Conversations will be updated automatically via the trigger and subscription
+    onMutate: async (content) => {
+      // Optional: Further optimize by adding optimistic updates
+      return { content };
+    },
+    onSuccess: (data) => {
+      // Invalidate conversations to update last message
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      
+      // Update messages cache - optional
+      queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
     },
     onError: (error: Error) => {
       toast.error(`Failed to send message: ${error.message}`);
@@ -145,6 +154,11 @@ export function useConversationsList() {
         console.error("Error in useConversationsList:", error);
         throw error;
       }
+    },
+    {
+      // Increase cache time to reduce refetching
+      staleTime: 5000,
+      cacheTime: 30000,
     }
   );
 }

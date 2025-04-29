@@ -17,8 +17,11 @@ export function useRealtimeMessages(conversationId: string) {
       return data.user?.id;
     };
 
+    // Create a more specific channel name
+    const channelName = `conversation:${conversationId}`;
+    
     const channel = supabase
-      .channel(`conversation:${conversationId}`)
+      .channel(channelName)
       .on('postgres_changes', 
         {
           event: 'INSERT',
@@ -31,8 +34,13 @@ export function useRealtimeMessages(conversationId: string) {
             // Update messages cache
             const newMessage = payload.new as Message;
             
+            // Optimistic update
             queryClient.setQueryData(['messages', conversationId], (oldData: Message[] = []) => {
-              return [...oldData, newMessage];
+              // Check if message already exists to avoid duplicates
+              if (!oldData.some(msg => msg.id === newMessage.id)) {
+                return [...oldData, newMessage];
+              }
+              return oldData;
             });
             
             // Mark as read if it's not from current user
@@ -40,6 +48,9 @@ export function useRealtimeMessages(conversationId: string) {
             if (currentUserId && newMessage.sender_id !== currentUserId) {
               markMessageAsRead(conversationId);
             }
+            
+            // Also update conversations list to show latest message
+            queryClient.invalidateQueries({ queryKey: ['conversations'] });
           } catch (error) {
             console.error("Error handling realtime message:", error);
           }
@@ -47,6 +58,7 @@ export function useRealtimeMessages(conversationId: string) {
       )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
+          console.log(`Subscribed to channel: ${channelName}`);
           setIsSubscribed(true);
         } else {
           console.log(`Realtime subscription status: ${status}`);
@@ -54,6 +66,7 @@ export function useRealtimeMessages(conversationId: string) {
       });
       
     return () => {
+      console.log(`Unsubscribing from channel: ${channelName}`);
       supabase.removeChannel(channel);
       setIsSubscribed(false);
     };
