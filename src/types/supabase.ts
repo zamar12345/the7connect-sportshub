@@ -1,4 +1,3 @@
-
 // Custom type definitions to use across the application
 // These types match our Supabase database schema
 
@@ -11,7 +10,11 @@ export type User = {
   bio?: string | null;
   sport?: string | null;
   disciplines?: string[] | null;
+  followers?: number | null;  // Added this property
+  following?: number | null;  // Added this property
   onboarding_completed?: boolean | null;
+  achievements?: any | null;  // Added this to match your schema
+  stats?: any | null;         // Added this to match your schema
 };
 
 export type OnboardingSteps = {
