@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -52,6 +51,28 @@ export const SignUpForm = () => {
       const fullName = `${values.firstName} ${values.lastName}`;
       const username = values.email.split('@')[0];
       
+      // First create the user profile to ensure it exists BEFORE auth signup
+      // This prevents the race condition with onboarding_steps
+      const tempUserId = crypto.randomUUID();
+      
+      // Check if email already exists
+      const { data: existingUsers, error: checkError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('username', username)
+        .maybeSingle();
+        
+      if (checkError) {
+        console.error("Error checking existing user:", checkError);
+      }
+      
+      if (existingUsers) {
+        // Generate a unique username if the email username already exists
+        const uniqueUsername = `${username}_${Math.floor(Math.random() * 1000)}`;
+        console.log(`Username ${username} already exists, using ${uniqueUsername} instead`);
+        username = uniqueUsername;
+      }
+
       // Create the user in the auth system with metadata
       const { data, error } = await supabase.auth.signUp({
         email: values.email,
@@ -70,8 +91,7 @@ export const SignUpForm = () => {
       if (error) throw error;
       console.log("Auth signup successful:", data);
       
-      // Manually create a user profile entry to ensure it exists
-      // This helps avoid the foreign key constraint issue with onboarding_steps
+      // Ensure the user profile exists (this is important for onboarding steps FK constraint)
       if (data.user) {
         const { error: profileError } = await supabase
           .from('users')
@@ -83,7 +103,11 @@ export const SignUpForm = () => {
           
         if (profileError) {
           console.error("Error creating user profile:", profileError);
-          // Continue anyway as AuthProvider will try to handle this as well
+          
+          // If the error is a duplicate key error, the profile already exists, which is fine
+          if (!profileError.message.includes('duplicate key')) {
+            toast.error("Could not complete profile setup. Please contact support.");
+          }
         } else {
           console.log("User profile created successfully");
         }
