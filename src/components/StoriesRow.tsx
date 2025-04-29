@@ -1,16 +1,34 @@
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Plus, ChevronRight, ChevronLeft } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { mockStories } from "@/data/mockData";
 import { useAuth } from "@/context/auth/AuthProvider";
 import CreateStoryDialog from "./CreateStoryDialog";
+import { fetchStories, Story } from "@/services/storyService";
 
 const StoriesRow = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const [createStoryOpen, setCreateStoryOpen] = useState(false);
+  const [stories, setStories] = useState<Story[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadStories = async () => {
+      setLoading(true);
+      try {
+        const storiesData = await fetchStories();
+        setStories(storiesData);
+      } catch (error) {
+        console.error("Error loading stories:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadStories();
+  }, []);
 
   const scrollLeft = () => {
     if (scrollRef.current) {
@@ -21,6 +39,15 @@ const StoriesRow = () => {
   const scrollRight = () => {
     if (scrollRef.current) {
       scrollRef.current.scrollBy({ left: 200, behavior: "smooth" });
+    }
+  };
+
+  const handleStoryCreated = async () => {
+    try {
+      const storiesData = await fetchStories();
+      setStories(storiesData);
+    } catch (error) {
+      console.error("Error refreshing stories:", error);
     }
   };
 
@@ -53,21 +80,31 @@ const StoriesRow = () => {
           )}
           
           {/* Stories */}
-          {mockStories.map((story) => (
-            <div key={story.id} className="flex-shrink-0 flex flex-col items-center">
-              <div className={`w-16 h-16 rounded-full p-[2px] ${story.viewed ? 'bg-muted' : 'sports-gradient'}`}>
-                <div className="rounded-full bg-background p-[2px] w-full h-full">
-                  <Avatar className="w-full h-full">
-                    <AvatarImage src={story.user.avatar} alt={story.user.name} />
-                    <AvatarFallback>{story.user.name[0]}</AvatarFallback>
-                  </Avatar>
-                </div>
-              </div>
-              <span className="text-xs text-muted-foreground mt-1 truncate w-16 text-center">
-                {story.user.username}
-              </span>
+          {loading ? (
+            <div className="flex items-center justify-center py-2 px-10">
+              <div className="animate-spin h-5 w-5 border-t-2 border-b-2 border-primary rounded-full"></div>
             </div>
-          ))}
+          ) : stories.length > 0 ? (
+            stories.map((story) => (
+              <div key={story.id} className="flex-shrink-0 flex flex-col items-center">
+                <div className={`w-16 h-16 rounded-full p-[2px] ${story.viewed ? 'bg-muted' : 'sports-gradient'}`}>
+                  <div className="rounded-full bg-background p-[2px] w-full h-full">
+                    <Avatar className="w-full h-full">
+                      <AvatarImage src={story.user?.avatar_url} alt={story.user?.username || ''} />
+                      <AvatarFallback>{story.user?.username?.charAt(0).toUpperCase() || '?'}</AvatarFallback>
+                    </Avatar>
+                  </div>
+                </div>
+                <span className="text-xs text-muted-foreground mt-1 truncate w-16 text-center">
+                  {story.user?.username || 'User'}
+                </span>
+              </div>
+            ))
+          ) : (
+            <div className="flex items-center justify-center py-2 px-10">
+              <span className="text-xs text-muted-foreground">No stories yet</span>
+            </div>
+          )}
         </div>
         
         <Button 
@@ -93,6 +130,7 @@ const StoriesRow = () => {
       <CreateStoryDialog 
         open={createStoryOpen} 
         onOpenChange={setCreateStoryOpen} 
+        onSuccess={handleStoryCreated}
       />
     </div>
   );

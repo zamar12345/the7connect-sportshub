@@ -76,13 +76,13 @@ const CreateStoryDialog = ({ open, onOpenChange, onSuccess }: CreateStoryDialogP
 
       // Create story record in database
       const { error: storyError } = await supabase
-        .from("stories")
+        .from('stories')
         .insert({
           user_id: user.id,
           image_url: publicUrlData.publicUrl,
           caption: caption || null,
           expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
-        });
+        } as any);
 
       if (storyError) throw storyError;
 
