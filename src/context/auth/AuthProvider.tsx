@@ -1,5 +1,5 @@
 
-import { createContext, useState, useEffect } from "react";
+import { createContext, useState, useEffect, useContext } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthContextType, UserProfile } from "./types";
@@ -27,32 +27,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const { resetPassword, verifyOtp, updatePassword, signOut } = useAuthOperations();
 
   useEffect(() => {
-    const getSession = async () => {
-      try {
-        // Get session from supabase
-        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          throw error;
-        }
-        
-        setSession(currentSession);
-        setUser(currentSession?.user || null);
-
-        if (currentSession?.user) {
-          // Fetch or create user profile
-          await handleUserProfile(currentSession.user.id, currentSession.user.user_metadata);
-        }
-      } catch (error) {
-        console.error("Error getting session:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    getSession();
-
-    // Subscribe to auth changes
+    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
         console.log("Auth state changed:", event, newSession?.user?.id);
@@ -61,7 +36,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(newSession?.user || null);
 
         if (newSession?.user) {
-          await handleUserProfile(newSession.user.id, newSession.user.user_metadata);
+          // Use setTimeout to prevent potential deadlocks with Supabase auth
+          setTimeout(async () => {
+            await handleUserProfile(newSession.user.id, newSession.user.user_metadata);
+          }, 0);
         } else {
           setProfile(null);
         }
@@ -69,6 +47,33 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setLoading(false);
       }
     );
+
+    // THEN check for existing session
+    const getSession = async () => {
+      try {
+        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Error getting session:", error);
+          setLoading(false);
+          return;
+        }
+        
+        setSession(currentSession);
+        setUser(currentSession?.user || null);
+
+        if (currentSession?.user) {
+          await handleUserProfile(currentSession.user.id, currentSession.user.user_metadata);
+        }
+      } catch (error) {
+        console.error("Error getting session:", error);
+      } finally {
+        // Ensure loading is set to false even if there's an error
+        setLoading(false);
+      }
+    };
+
+    getSession();
 
     // Cleanup subscription on unmount
     return () => {
@@ -93,11 +98,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 };
 
 export const useAuth = () => {
-  const context = React.useContext(AuthContext);
+  const context = useContext(AuthContext);
   if (!context) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
-
-import React from "react";
