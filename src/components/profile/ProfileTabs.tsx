@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PostCard from "@/components/PostCard";
@@ -82,7 +81,7 @@ const ProfileTabs = ({ profileData, userPosts, onTabChange }: ProfileTabsProps) 
         </TabsContent>
         
         <TabsContent value="donations">
-          <ProfileDonationsTab profileId={profileData.id} />
+          <ProfileDonationsTab userId={profileData.id} />
         </TabsContent>
         
         <TabsContent value="likes">

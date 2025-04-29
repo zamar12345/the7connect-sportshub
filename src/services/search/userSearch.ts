@@ -19,8 +19,10 @@ export const searchUsers = async (
   try {
     let userQuery = supabase
       .from('users')
-      .select('id, username, full_name, avatar_url, bio, sport, followers, created_at')
-      .or(`username.ilike.%${query}%,full_name.ilike.%${query}%`);
+      .select('id, username, full_name, avatar_url, bio, sport, followers, created_at');
+    
+    // Add search filter
+    userQuery = userQuery.or(`username.ilike.%${query}%,full_name.ilike.%${query}%`);
     
     // Apply filters
     if (filter === 'sport' && sport) {
@@ -49,7 +51,7 @@ export const searchUsers = async (
       avatar_url: user.avatar_url,
       bio: user.bio,
       sport: user.sport,
-      followers: user.followers,
+      followers: user.followers || 0,
       created_at: user.created_at,
       isVerified: false // This would come from your database
     }));

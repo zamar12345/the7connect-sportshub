@@ -5,6 +5,11 @@ import { toast } from "sonner";
 
 export const useSignIn = () => {
   const [loading, setLoading] = useState(false);
+  const [loginType, setLoginType] = useState<"email" | "username">("email");
+  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
   
   // Email + Password login
   const signInWithEmail = async (email: string, password: string) => {
@@ -84,9 +89,49 @@ export const useSignIn = () => {
     }
   };
   
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (loginType === "email") {
+      await signInWithEmail(email, password);
+    } else {
+      // Username login requires a lookup first to get the email
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from("users")
+          .select("email")
+          .eq("username", username)
+          .maybeSingle();
+        
+        if (error) throw error;
+        if (!data || !data.email) {
+          toast.error("Username not found");
+          setLoading(false);
+          return;
+        }
+        
+        await signInWithEmail(data.email, password);
+      } catch (error: any) {
+        toast.error(`Error logging in: ${error.message}`);
+        setLoading(false);
+      }
+    }
+  };
+  
   return {
     signInWithEmail,
     signInWithGoogle,
-    loading
+    loginType,
+    setLoginType,
+    email,
+    setEmail,
+    username,
+    setUsername,
+    password,
+    setPassword,
+    loading,
+    resetDialogOpen,
+    setResetDialogOpen,
+    handleSignIn
   };
 };

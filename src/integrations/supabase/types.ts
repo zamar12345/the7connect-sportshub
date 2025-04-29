@@ -413,41 +413,53 @@ export type Database = {
       }
       users: {
         Row: {
+          achievements: Json | null
           avatar_url: string | null
           bio: string | null
           created_at: string | null
           disciplines: string[] | null
           email: string | null
+          followers: number | null
+          following: number | null
           full_name: string | null
           id: string
           onboarding_completed: boolean | null
           sport: string | null
+          stats: Json | null
           updated_at: string | null
           username: string
         }
         Insert: {
+          achievements?: Json | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
           disciplines?: string[] | null
           email?: string | null
+          followers?: number | null
+          following?: number | null
           full_name?: string | null
           id: string
           onboarding_completed?: boolean | null
           sport?: string | null
+          stats?: Json | null
           updated_at?: string | null
           username: string
         }
         Update: {
+          achievements?: Json | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
           disciplines?: string[] | null
           email?: string | null
+          followers?: number | null
+          following?: number | null
           full_name?: string | null
           id?: string
           onboarding_completed?: boolean | null
           sport?: string | null
+          stats?: Json | null
           updated_at?: string | null
           username?: string
         }
