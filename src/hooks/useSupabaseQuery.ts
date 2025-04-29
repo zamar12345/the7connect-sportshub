@@ -18,6 +18,13 @@ export function useSupabaseQuery<T>(
         toast.error(`Error: ${error.message}`);
       }
     },
+    retry: (failureCount, error) => {
+      // Don't retry on unauthorized errors or after 3 attempts
+      if (error.message.includes('JWT') || error.message.includes('authentication')) {
+        return false;
+      }
+      return failureCount < 3;
+    },
     ...options
   });
 }

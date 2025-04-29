@@ -27,22 +27,30 @@ export function useRealtimeMessages(conversationId: string) {
           filter: `conversation_id=eq.${conversationId}`
         }, 
         async (payload) => {
-          // Update messages cache
-          const newMessage = payload.new as Message;
-          
-          queryClient.setQueryData(['messages', conversationId], (oldData: Message[] = []) => {
-            return [...oldData, newMessage];
-          });
-          
-          // Mark as read if it's not from current user
-          const currentUserId = await getCurrentUserId();
-          if (newMessage.sender_id !== currentUserId) {
-            markMessageAsRead(conversationId);
+          try {
+            // Update messages cache
+            const newMessage = payload.new as Message;
+            
+            queryClient.setQueryData(['messages', conversationId], (oldData: Message[] = []) => {
+              return [...oldData, newMessage];
+            });
+            
+            // Mark as read if it's not from current user
+            const currentUserId = await getCurrentUserId();
+            if (currentUserId && newMessage.sender_id !== currentUserId) {
+              markMessageAsRead(conversationId);
+            }
+          } catch (error) {
+            console.error("Error handling realtime message:", error);
           }
         }
       )
-      .subscribe(() => {
-        setIsSubscribed(true);
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          setIsSubscribed(true);
+        } else {
+          console.log(`Realtime subscription status: ${status}`);
+        }
       });
       
     return () => {
@@ -57,7 +65,10 @@ export function useRealtimeMessages(conversationId: string) {
         conversation_id_param: conversationId
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error marking messages as read:", error);
+        throw error;
+      }
       
       // Invalidate conversations cache to update unread counts
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
@@ -66,5 +77,5 @@ export function useRealtimeMessages(conversationId: string) {
     }
   };
 
-  return { isSubscribed };
+  return { isSubscribed, markMessageAsRead };
 }

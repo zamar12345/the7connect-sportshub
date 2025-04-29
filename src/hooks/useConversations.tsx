@@ -18,14 +18,16 @@ export const useConversations = (userId?: string) => {
     try {
       setLoading(true);
       
-      // Using explicit typing to avoid deep type instantiation
+      // Using the updated conversation_details view
       const { data: recentConversations, error } = await supabase
         .from('conversation_details')
-        .select('*')
-        // Using a simpler filter approach
-        .filter('participants', 'cs', `[{"id":"${currentUserId}"}]`);
+        .select('*');
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching conversations:", error);
+        toast.error(`Failed to load conversations: ${error.message}`);
+        throw error;
+      }
       
       if (recentConversations) {
         const formattedConversations = recentConversations.map(conv => {
@@ -90,29 +92,34 @@ export const useConversations = (userId?: string) => {
         setConversations(formattedConversations);
       }
     } catch (error: any) {
-      toast.error("Failed to load conversations: " + error.message);
+      console.error("Error in fetchConversations:", error);
       
-      const { data: mockUsers } = await supabase
-        .from('users')
-        .select('id, full_name, avatar_url, username')
-        .neq('id', currentUserId)
-        .limit(5);
-      
-      if (mockUsers) {
-        const mockConversations = mockUsers.map(mockUser => ({
-          id: `conv-${mockUser.id}`,
-          user: {
-            id: mockUser.id,
-            name: mockUser.full_name || 'Unknown User',
-            avatar: mockUser.avatar_url || '',
-            username: mockUser.username
-          },
-          lastMessage: "Tap to start messaging",
-          time: "now",
-          unread: 0
-        })) as Conversation[];
+      // Fallback to fetch some users as potential conversation partners
+      try {
+        const { data: mockUsers } = await supabase
+          .from('users')
+          .select('id, full_name, avatar_url, username')
+          .neq('id', currentUserId)
+          .limit(5);
         
-        setConversations(mockConversations);
+        if (mockUsers) {
+          const mockConversations = mockUsers.map(mockUser => ({
+            id: `conv-${mockUser.id}`,
+            user: {
+              id: mockUser.id,
+              name: mockUser.full_name || 'Unknown User',
+              avatar: mockUser.avatar_url || '',
+              username: mockUser.username
+            },
+            lastMessage: "Tap to start messaging",
+            time: "now",
+            unread: 0
+          })) as Conversation[];
+          
+          setConversations(mockConversations);
+        }
+      } catch (fallbackError) {
+        console.error("Error fetching fallback users:", fallbackError);
       }
     } finally {
       setLoading(false);
