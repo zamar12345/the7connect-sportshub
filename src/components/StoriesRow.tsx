@@ -1,12 +1,16 @@
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Plus, ChevronRight, ChevronLeft } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { mockStories, mockUsers } from "@/data/mockData";
+import { mockStories } from "@/data/mockData";
+import { useAuth } from "@/context/auth/AuthProvider";
+import CreateStoryDialog from "./CreateStoryDialog";
 
 const StoriesRow = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
+  const [createStoryOpen, setCreateStoryOpen] = useState(false);
 
   const scrollLeft = () => {
     if (scrollRef.current) {
@@ -32,18 +36,21 @@ const StoriesRow = () => {
           className="flex gap-3 overflow-x-auto px-4 scrollbar-hidden pb-1"
         >
           {/* Create new story */}
-          <div className="flex-shrink-0 flex flex-col items-center">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-1 relative border-2 border-dashed border-muted-foreground">
-              <Button 
-                size="icon" 
-                variant="outline" 
-                className="w-full h-full rounded-full bg-muted/50"
-              >
-                <Plus size={20} />
-              </Button>
+          {user && (
+            <div className="flex-shrink-0 flex flex-col items-center">
+              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-1 relative border-2 border-dashed border-muted-foreground">
+                <Button 
+                  size="icon" 
+                  variant="outline" 
+                  className="w-full h-full rounded-full bg-muted/50"
+                  onClick={() => setCreateStoryOpen(true)}
+                >
+                  <Plus size={20} />
+                </Button>
+              </div>
+              <span className="text-xs text-muted-foreground mt-1">New</span>
             </div>
-            <span className="text-xs text-muted-foreground mt-1">New</span>
-          </div>
+          )}
           
           {/* Stories */}
           {mockStories.map((story) => (
@@ -81,6 +88,12 @@ const StoriesRow = () => {
           <ChevronRight size={18} />
         </Button>
       </div>
+      
+      {/* Create Story Dialog */}
+      <CreateStoryDialog 
+        open={createStoryOpen} 
+        onOpenChange={setCreateStoryOpen} 
+      />
     </div>
   );
 };
