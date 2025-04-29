@@ -46,11 +46,11 @@ export const SignUpForm = () => {
 
   const handleSignUp = async (values: z.infer<typeof signupSchema>) => {
     setLoading(true);
+    console.log("Starting sign up process...");
     
     try {
-      // Generate a username from email (before @ symbol)
-      const username = values.email.split('@')[0];
       const fullName = `${values.firstName} ${values.lastName}`;
+      const username = values.email.split('@')[0];
       
       // First, create the user in the auth system
       const { data, error } = await supabase.auth.signUp({
@@ -68,6 +68,7 @@ export const SignUpForm = () => {
       });
       
       if (error) throw error;
+      console.log("Auth signup successful:", data);
 
       // User successfully created
       toast.success("Registration successful! Please check your email for verification.");

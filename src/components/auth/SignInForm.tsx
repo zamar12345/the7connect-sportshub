@@ -51,6 +51,7 @@ export const SignInForm = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    console.log("Starting sign in process...");
     
     try {
       const { data, error } = await supabase.auth.signInWithPassword({

@@ -48,6 +48,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Create or fetch user profile
   const handleUserProfile = async (userId: string, userData?: any) => {
     try {
+      console.log("Handling user profile for ID:", userId);
+      
       // First try to fetch existing profile
       const { data: existingProfile, error: fetchError } = await supabase
         .from('users')
