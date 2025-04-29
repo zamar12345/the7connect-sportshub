@@ -7,6 +7,8 @@ const defaultAuthContext: AuthContextType = {
   user: null,
   profile: null,
   loading: true,
+  isAuthenticated: false, // Added this property
+  isLoading: true,        // Added this property
   resetPassword: async () => {},
   verifyOtp: async () => {},
   updatePassword: async () => {},
