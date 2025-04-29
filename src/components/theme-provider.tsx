@@ -1,10 +1,17 @@
 
-"use client"
+import { ReactNode } from "react";
+import { ThemeProvider as NextThemesProvider } from "next-themes";
 
-import * as React from "react"
-import { ThemeProvider as NextThemesProvider } from "next-themes"
-import { type ThemeProviderProps } from "next-themes/dist/types"
-
-export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
-  return <NextThemesProvider {...props}>{children}</NextThemesProvider>
+interface ThemeProviderProps {
+  children: ReactNode;
+  defaultTheme?: string;
+  storageKey?: string;
 }
+
+export const ThemeProvider = ({ children, defaultTheme = "light", storageKey = "vite-ui-theme" }: ThemeProviderProps) => {
+  return (
+    <NextThemesProvider attribute="class" defaultTheme={defaultTheme} storageKey={storageKey}>
+      {children}
+    </NextThemesProvider>
+  );
+};
