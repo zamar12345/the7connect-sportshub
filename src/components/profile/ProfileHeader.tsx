@@ -6,6 +6,7 @@ import DonateButton from "@/components/DonateButton";
 import { ProfileData } from "@/types/profile";
 import { useAuth } from "@/context/AuthProvider";
 import FollowButton from "@/components/FollowButton";
+import { useNavigate } from "react-router-dom";
 
 interface ProfileHeaderProps {
   profileData: ProfileData;
@@ -14,7 +15,12 @@ interface ProfileHeaderProps {
 
 const ProfileHeader = ({ profileData, onEditProfile }: ProfileHeaderProps) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const isCurrentUser = user?.id === profileData.id;
+  
+  const handleEditProfile = () => {
+    navigate('/profile/edit');
+  };
   
   return (
     <div className="relative">
@@ -38,7 +44,7 @@ const ProfileHeader = ({ profileData, onEditProfile }: ProfileHeaderProps) => {
             variant="outline" 
             size="sm" 
             className="rounded-full"
-            onClick={onEditProfile}
+            onClick={handleEditProfile}
           >
             <Settings size={16} className="mr-1" />
             Edit

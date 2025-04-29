@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +8,6 @@ import ProfileInfo from "@/components/profile/ProfileInfo";
 import ProfileTabs from "@/components/profile/ProfileTabs";
 import { ProfileData } from "@/types/profile";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "sonner";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -99,11 +97,6 @@ const Profile = () => {
     fetchProfile();
   }, [id, user?.id]);
 
-  const handleEditProfile = () => {
-    // Navigate to edit profile page or open edit modal
-    toast.info("Profile editing will be implemented soon!");
-  };
-
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
   };
@@ -179,7 +172,7 @@ const Profile = () => {
     <MobileLayout>
       <ProfileHeader 
         profileData={profileData} 
-        onEditProfile={handleEditProfile} 
+        onEditProfile={() => {}}  // This is now handled within the ProfileHeader component
       />
       <ProfileInfo profileData={profileData} />
       <ProfileTabs 
