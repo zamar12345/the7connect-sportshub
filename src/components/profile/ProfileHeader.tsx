@@ -1,3 +1,4 @@
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Settings, User } from "lucide-react";
@@ -54,7 +55,7 @@ const ProfileHeader = ({ profileData, onEditProfile }: ProfileHeaderProps) => {
           <div className="flex gap-2">
             {!isOwnProfile && (
               <>
-                <FollowButton profileId={profileData.id} />
+                <FollowButton userId={profileData.id} />
                 <StartMessageButton userId={profileData.id} username={profileData.username} />
               </>
             )}

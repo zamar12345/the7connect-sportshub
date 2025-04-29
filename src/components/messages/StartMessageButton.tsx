@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { MessageCircle } from "lucide-react";
 import { startConversationFromProfile } from "@/services/messageService";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 type StartMessageButtonProps = {
   userId: string;
@@ -12,9 +13,15 @@ type StartMessageButtonProps = {
 
 const StartMessageButton = ({ userId, username, className = "" }: StartMessageButtonProps) => {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleStartConversation = async () => {
-    await startConversationFromProfile(userId, username, navigate);
+    try {
+      setIsLoading(true);
+      await startConversationFromProfile(userId, username, navigate);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -23,9 +30,10 @@ const StartMessageButton = ({ userId, username, className = "" }: StartMessageBu
       size="sm"
       className={`flex items-center gap-1 ${className}`}
       onClick={handleStartConversation}
+      disabled={isLoading}
     >
       <MessageCircle size={16} />
-      <span>Message</span>
+      <span>{isLoading ? "Loading..." : "Message"}</span>
     </Button>
   );
 };

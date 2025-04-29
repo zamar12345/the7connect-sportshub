@@ -13,24 +13,34 @@ export const createConversation = async (otherUserId: string): Promise<string | 
     }
 
     // Check if a conversation already exists between these users
-    const { data: existingConversations, error: checkError } = await supabase
+    const { data: existingParticipants, error: checkError } = await supabase
       .from('conversation_participants')
       .select('conversation_id')
-      .eq('user_id', currentUser.id)
-      .in('conversation_id', 
-        supabase.from('conversation_participants')
-          .select('conversation_id')
-          .eq('user_id', otherUserId)
-      );
+      .eq('user_id', currentUser.id);
       
     if (checkError) {
       console.error("Error checking existing conversations:", checkError);
       throw checkError;
     }
     
+    // Get conversation IDs where the current user is a participant
+    const currentUserConversationIds = existingParticipants?.map(p => p.conversation_id) || [];
+    
+    // Find conversations where the other user is also a participant
+    const { data: otherUserConversations, error: otherUserError } = await supabase
+      .from('conversation_participants')
+      .select('conversation_id')
+      .eq('user_id', otherUserId)
+      .in('conversation_id', currentUserConversationIds);
+    
+    if (otherUserError) {
+      console.error("Error checking other user conversations:", otherUserError);
+      throw otherUserError;
+    }
+    
     // If conversation already exists, return its ID
-    if (existingConversations && existingConversations.length > 0) {
-      return existingConversations[0].conversation_id;
+    if (otherUserConversations && otherUserConversations.length > 0) {
+      return otherUserConversations[0].conversation_id;
     }
     
     // Otherwise, create a new conversation
@@ -101,18 +111,20 @@ export const getConversationParticipants = async (conversationId: string): Promi
 // Start a conversation with a user from their profile
 export const startConversationFromProfile = async (
   userId: string, 
-  username: string | null, 
-  navigate: (path: string) => void
+  username?: string | null, 
+  navigate?: (path: string) => void
 ) => {
   try {
     const conversationId = await createConversation(userId);
     
-    if (conversationId) {
+    if (conversationId && navigate) {
       toast.success(`Started conversation with ${username || 'user'}`);
       navigate('/messages');
     }
+    return conversationId;
   } catch (error: any) {
     console.error("Error starting conversation:", error);
     toast.error(`Could not start conversation: ${error.message}`);
+    return null;
   }
 };
