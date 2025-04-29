@@ -45,35 +45,42 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch user profile
+  // Fetch user profile with error handling
   const fetchUserProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('users')
         .select('id, username, full_name, avatar_url, bio, sport, disciplines, onboarding_completed')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
         
       if (error) {
         console.error("Error fetching user profile:", error);
-        return;
+        return null;
       }
       
-      if (data) setProfile(data as UserProfile);
+      if (data) {
+        setProfile(data as UserProfile);
+        return data;
+      }
+      
+      return null;
     } catch (error) {
-      console.error("Error fetching user profile:", error);
+      console.error("Exception fetching user profile:", error);
+      return null;
     }
   };
 
   useEffect(() => {
-    // Set up auth state listener first
+    // Set up auth state listener first to avoid missing events
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
+        console.log("Auth state change event:", event);
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
+        // Use setTimeout to prevent Supabase client recursion issues
         if (currentSession?.user) {
-          // Use setTimeout to prevent potential recursion issues with Supabase client
           setTimeout(() => {
             fetchUserProfile(currentSession.user.id);
           }, 0);
@@ -87,11 +94,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Then check for existing session
     supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
+      console.log("Initial session check:", currentSession ? "Session found" : "No session");
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
       
       if (currentSession?.user) {
-        await fetchUserProfile(currentSession.user.id);
+        const profileData = await fetchUserProfile(currentSession.user.id);
+        if (!profileData) {
+          console.log("No profile found for user, may need to create one");
+        }
       }
       
       setLoading(false);
@@ -158,6 +169,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(null);
       setProfile(null);
       setSession(null);
+      toast.success("Signed out successfully");
     } catch (error: any) {
       toast.error(error.message || "Error signing out");
       throw error;

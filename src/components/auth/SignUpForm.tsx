@@ -48,8 +48,8 @@ export const SignUpForm = () => {
     setLoading(true);
     
     try {
-      // Sign up the user with Supabase Auth
-      const { error: signUpError } = await supabase.auth.signUp({
+      // Create the user in Supabase Auth system
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
         options: {
@@ -63,6 +63,22 @@ export const SignUpForm = () => {
       });
       
       if (signUpError) throw signUpError;
+      
+      // After successful signup, ensure the user record is created in public.users table
+      // Note: This may not be necessary as RLS policies and triggers should handle this automatically
+      if (authData?.user?.id) {
+        // Create entry in the users table if needed
+        const { error: profileError } = await supabase.from('users').upsert({
+          id: authData.user.id,
+          full_name: `${values.firstName} ${values.lastName}`,
+          username: values.email.split('@')[0], // Simple username based on email
+        }, { onConflict: 'id' });
+        
+        if (profileError) {
+          console.error("Error creating user profile:", profileError);
+          // Continue anyway as the user was created in auth system
+        }
+      }
       
       toast.success("Registration successful! Please check your email for verification.");
       form.reset();
