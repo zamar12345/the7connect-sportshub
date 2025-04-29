@@ -70,6 +70,8 @@ export const SignUpForm = () => {
       }
 
       // Create the user in the auth system with metadata
+      // With RLS properly configured, Supabase will automatically create the user profile
+      // when the auth user is created due to our trigger
       const { data, error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
@@ -87,7 +89,6 @@ export const SignUpForm = () => {
       if (error) throw error;
       console.log("Auth signup successful:", data);
       
-      // Wait for user creation to complete before trying to create related records
       if (data.user) {
         // User successfully created
         toast.success("Registration successful! Please check your email for verification.");
