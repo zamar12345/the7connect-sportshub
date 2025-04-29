@@ -110,8 +110,11 @@ export type Donation = {
   amount: number;
   status: string;
   message?: string;
-  donor_name?: string;
-  donor_username?: string;
-  donor_avatar?: string;
+  donor_name?: string | null;
+  donor_username?: string | null;
+  donor_avatar?: string | null;
+  recipient_name?: string | null;
+  recipient_username?: string | null;
+  recipient_avatar?: string | null;
   created_at: string;
 };

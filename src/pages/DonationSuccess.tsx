@@ -6,11 +6,12 @@ import { CheckCircle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Donation } from "@/types/supabase";
 
 type DonationDetail = {
   amount: number;
-  recipient_name: string;
-  recipient_username: string;
+  recipient_name: string | null;
+  recipient_username: string | null;
   recipient_avatar: string | null;
   status: string;
 };
@@ -42,10 +43,13 @@ const DonationSuccess = () => {
 
         if (error) {
           console.error("Error fetching donation:", error);
+          setLoading(false);
           return;
         }
 
-        setRecentDonation(data);
+        if (data) {
+          setRecentDonation(data as DonationDetail);
+        }
       } catch (err) {
         console.error("Error:", err);
       } finally {
@@ -69,7 +73,7 @@ const DonationSuccess = () => {
           <div className="text-center">
             <p className="text-xl font-bold">${recentDonation.amount}</p>
             <p className="text-muted-foreground">
-              to {recentDonation.recipient_name || recentDonation.recipient_username}
+              to {recentDonation.recipient_name || recentDonation.recipient_username || "Someone"}
             </p>
             <p className="mt-4">Your support makes a difference.</p>
           </div>

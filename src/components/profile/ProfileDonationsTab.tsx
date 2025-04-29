@@ -29,8 +29,15 @@ const ProfileDonationsTab = ({ userId }: { userId: string }) => {
         const { data, error } = await query
           .order('created_at', { ascending: false });
           
-        if (error) throw error;
-        setDonations(data as Donation[]);
+        if (error) {
+          console.error('Error fetching donations:', error);
+          setLoading(false);
+          return;
+        }
+        
+        if (data) {
+          setDonations(data as Donation[]);
+        }
       } catch (error) {
         console.error('Error fetching donations:', error);
       } finally {
@@ -79,7 +86,9 @@ const ProfileDonationsTab = ({ userId }: { userId: string }) => {
             <p className="text-sm text-muted-foreground mb-1">
               {donation.recipient_id === userId ? 'Received from' : 'Sent to'}: 
               <span className="font-medium ml-1">
-                {donation.recipient_id === userId ? donation.donor_name || 'Anonymous' : 'Someone'}
+                {donation.recipient_id === userId 
+                  ? donation.donor_name || donation.donor_username || 'Anonymous' 
+                  : donation.recipient_name || donation.recipient_username || 'Someone'}
               </span>
             </p>
           )}

@@ -174,7 +174,10 @@ export type Database = {
           donor_username: string | null
           id: string
           message: string | null
+          recipient_avatar: string | null
           recipient_id: string | null
+          recipient_name: string | null
+          recipient_username: string | null
           status: string
         }
         Insert: {
@@ -186,7 +189,10 @@ export type Database = {
           donor_username?: string | null
           id?: string
           message?: string | null
+          recipient_avatar?: string | null
           recipient_id?: string | null
+          recipient_name?: string | null
+          recipient_username?: string | null
           status: string
         }
         Update: {
@@ -198,7 +204,10 @@ export type Database = {
           donor_username?: string | null
           id?: string
           message?: string | null
+          recipient_avatar?: string | null
           recipient_id?: string | null
+          recipient_name?: string | null
+          recipient_username?: string | null
           status?: string
         }
         Relationships: [
