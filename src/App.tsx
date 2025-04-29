@@ -3,7 +3,7 @@ import { BrowserRouter } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { QueryProvider } from "@/context/QueryProvider";
-import { AuthProvider } from "@/context/AuthProvider";
+import { AuthProvider } from "@/context/auth/AuthProvider";
 import AppRoutes from "@/routes/AppRoutes";
 
 function App() {
