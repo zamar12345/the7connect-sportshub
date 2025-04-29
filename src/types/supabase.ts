@@ -1,3 +1,4 @@
+
 // Custom type definitions to use across the application
 // These types match our Supabase database schema
 
@@ -32,6 +33,7 @@ export type Post = {
   user_id: string;
   content: string;
   image_url?: string;
+  video_url?: string; // Added for video support
   created_at: string;
   updated_at?: string;
   user?: User;

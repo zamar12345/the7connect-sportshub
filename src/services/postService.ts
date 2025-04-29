@@ -13,6 +13,7 @@ interface Post {
   content: string;
   created_at: string;
   image_url?: string;
+  video_url?: string; // Added for video support
   user_id: string;
   user: {
     id: string;
@@ -118,6 +119,43 @@ export const fetchFollowingPosts = async (): Promise<Post[]> => {
     })) as Post[];
   } catch (error) {
     console.error("Error fetching following posts:", error);
+    throw error;
+  }
+};
+
+// Create a new post with optional image and video
+export const createPost = async (content: string, imageUrl?: string, videoUrl?: string): Promise<Post | null> => {
+  try {
+    const { data: session } = await supabase.auth.getSession();
+    
+    if (!session.session) {
+      throw new Error("You must be logged in to create a post");
+    }
+    
+    const userId = session.session.user.id;
+    
+    // Create the post in the database
+    const { data, error } = await supabase
+      .from('posts')
+      .insert({
+        content,
+        user_id: userId,
+        image_url: imageUrl,
+        video_url: videoUrl
+      })
+      .select(`
+        *,
+        user:users(id, username, full_name, avatar_url)
+      `)
+      .single();
+      
+    if (error) {
+      throw error;
+    }
+    
+    return data as Post;
+  } catch (error) {
+    console.error("Error creating post:", error);
     throw error;
   }
 };

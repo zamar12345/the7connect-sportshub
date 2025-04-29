@@ -1,19 +1,25 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, Image, Video, MapPin, Smile, ArrowLeft } from "lucide-react";
+import { X, Image, Video, MapPin, Smile, ArrowLeft, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/context/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { uploadMedia, VALID_IMAGE_TYPES, VALID_VIDEO_TYPES } from "@/services/mediaService";
+import { createPost } from "@/services/postService";
+import { MediaUploadPreview } from "@/components/MediaUploadPreview";
 
 const Compose = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [content, setContent] = useState("");
   const [isPosting, setIsPosting] = useState(false);
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [mediaUrl, setMediaUrl] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const charLimit = 280;
   const charsRemaining = charLimit - content.length;
 
@@ -30,24 +36,84 @@ const Compose = () => {
     return hashtags;
   };
   
+  // Handle file upload
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video') => {
+    if (!event.target.files || event.target.files.length === 0) {
+      return;
+    }
+    
+    const file = event.target.files[0];
+    
+    // Validate file type
+    if (type === 'image' && !VALID_IMAGE_TYPES.includes(file.type)) {
+      toast.error("Please select a valid image file (JPG, PNG, WEBP, GIF)");
+      return;
+    }
+    
+    if (type === 'video' && !VALID_VIDEO_TYPES.includes(file.type)) {
+      toast.error("Please select a valid video file (MP4, WEBM, MOV)");
+      return;
+    }
+    
+    // Set the selected file for preview
+    setMediaFile(file);
+    setMediaUrl(null);
+    
+    // Reset the input value to allow selecting the same file again
+    event.target.value = '';
+  };
+  
+  // Remove the uploaded media
+  const handleRemoveMedia = () => {
+    setMediaFile(null);
+    setMediaUrl(null);
+    setUploadProgress(0);
+  };
+  
   const handlePost = async () => {
-    if (content.trim() === "" || !user) return;
+    if (content.trim() === "" && !mediaFile) {
+      toast.error("Please add some content or media to your post");
+      return;
+    }
+    
+    if (!user) {
+      toast.error("You must be signed in to post");
+      return;
+    }
     
     setIsPosting(true);
     
-    const hashtags = extractHashtags(content);
-    
     try {
-      const { data, error } = await supabase
-        .from('posts')
-        .insert({
-          content,
-          user_id: user.id,
-          hashtags
-        })
-        .select();
+      let finalImageUrl: string | undefined;
+      let finalVideoUrl: string | undefined;
+      
+      // Upload media if present
+      if (mediaFile) {
+        const isImage = VALID_IMAGE_TYPES.includes(mediaFile.type);
+        const isVideo = VALID_VIDEO_TYPES.includes(mediaFile.type);
         
-      if (error) throw error;
+        const uploadedUrl = await uploadMedia({
+          file: mediaFile,
+          userId: user.id,
+          onProgress: (progress) => setUploadProgress(progress),
+        });
+        
+        if (!uploadedUrl) {
+          throw new Error("Failed to upload media");
+        }
+        
+        if (isImage) {
+          finalImageUrl = uploadedUrl;
+        } else if (isVideo) {
+          finalVideoUrl = uploadedUrl;
+        }
+      }
+      
+      // Extract hashtags
+      const hashtags = extractHashtags(content);
+      
+      // Create the post
+      const post = await createPost(content, finalImageUrl, finalVideoUrl);
       
       toast.success("Post created successfully!");
       navigate("/");
@@ -73,10 +139,17 @@ const Compose = () => {
         <Button
           size="sm"
           onClick={handlePost}
-          disabled={content.trim() === "" || content.length > charLimit || isPosting}
+          disabled={content.trim() === "" && !mediaFile || content.length > charLimit || isPosting}
           className="bg-sport-green hover:bg-sport-green/90 text-white"
         >
-          {isPosting ? "Posting..." : "Post"}
+          {isPosting ? (
+            <>
+              <Loader2 size={16} className="animate-spin" />
+              <span>Posting...</span>
+            </>
+          ) : (
+            "Post"
+          )}
         </Button>
       </header>
       
@@ -95,14 +168,64 @@ const Compose = () => {
             autoFocus
           />
           
+          {/* Media Preview */}
+          {(mediaFile || mediaUrl) && (
+            <MediaUploadPreview
+              file={mediaFile}
+              url={mediaUrl}
+              onRemove={handleRemoveMedia}
+              uploadProgress={uploadProgress}
+            />
+          )}
+          
           <div className="flex items-center justify-between border-t border-border mt-4 pt-4">
             <div className="flex space-x-4">
-              <Button variant="ghost" size="icon" className="text-sport-blue">
-                <Image size={20} />
-              </Button>
-              <Button variant="ghost" size="icon" className="text-sport-blue">
-                <Video size={20} />
-              </Button>
+              {/* Image Upload */}
+              <div className="relative">
+                <input 
+                  type="file"
+                  id="image-upload"
+                  className="sr-only"
+                  accept={VALID_IMAGE_TYPES.join(',')}
+                  onChange={(e) => handleFileUpload(e, 'image')}
+                  disabled={isPosting || !!mediaFile}
+                />
+                <label htmlFor="image-upload">
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-sport-blue cursor-pointer"
+                    disabled={isPosting || !!mediaFile}
+                  >
+                    <Image size={20} />
+                  </Button>
+                </label>
+              </div>
+              
+              {/* Video Upload */}
+              <div className="relative">
+                <input 
+                  type="file"
+                  id="video-upload"
+                  className="sr-only"
+                  accept={VALID_VIDEO_TYPES.join(',')}
+                  onChange={(e) => handleFileUpload(e, 'video')}
+                  disabled={isPosting || !!mediaFile}
+                />
+                <label htmlFor="video-upload">
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-sport-blue cursor-pointer"
+                    disabled={isPosting || !!mediaFile}
+                  >
+                    <Video size={20} />
+                  </Button>
+                </label>
+              </div>
+              
               <Button variant="ghost" size="icon" className="text-sport-blue">
                 <MapPin size={20} />
               </Button>
