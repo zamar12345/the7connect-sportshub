@@ -1,4 +1,3 @@
-
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Settings, User } from "lucide-react";
@@ -7,6 +6,7 @@ import { ProfileData } from "@/types/profile";
 import { useAuth } from "@/context/AuthProvider";
 import FollowButton from "@/components/FollowButton";
 import { useNavigate } from "react-router-dom";
+import StartMessageButton from "@/components/messages/StartMessageButton";
 
 interface ProfileHeaderProps {
   profileData: ProfileData;
@@ -17,6 +17,7 @@ const ProfileHeader = ({ profileData, onEditProfile }: ProfileHeaderProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const isCurrentUser = user?.id === profileData.id;
+  const isOwnProfile = user?.id === profileData.id;
   
   const handleEditProfile = () => {
     navigate('/profile/edit');
@@ -50,10 +51,14 @@ const ProfileHeader = ({ profileData, onEditProfile }: ProfileHeaderProps) => {
             Edit
           </Button>
         ) : (
-          <FollowButton 
-            userId={profileData.id} 
-            className="rounded-full"
-          />
+          <div className="flex gap-2">
+            {!isOwnProfile && (
+              <>
+                <FollowButton profileId={profileData.id} />
+                <StartMessageButton userId={profileData.id} username={profileData.username} />
+              </>
+            )}
+          </div>
         )}
         <DonateButton 
           recipientId={profileData.id} 

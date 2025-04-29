@@ -1,5 +1,6 @@
 
 import { Message } from "@/types/messages";
+import { format } from "date-fns";
 
 type MessageBubbleProps = {
   message: Message;
@@ -22,7 +23,7 @@ const MessageBubble = ({ message, isCurrentUser }: MessageBubbleProps) => {
           ? 'text-primary-foreground/70' 
           : 'text-muted-foreground'
         }`}>
-          {new Date(message.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+          {format(new Date(message.created_at), 'h:mm a')}
         </p>
       </div>
     </div>

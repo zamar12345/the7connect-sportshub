@@ -26,3 +26,8 @@ export type Message = {
   created_at: string;
   is_read: boolean;
 };
+
+export type CreateMessageRequest = {
+  content: string;
+  conversation_id: string;
+};
