@@ -2,81 +2,91 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
 
 export const useSignIn = () => {
-  const [loginType, setLoginType] = useState<"email" | "username">("email");
-  const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [resetDialogOpen, setResetDialogOpen] = useState(false);
-  const navigate = useNavigate();
-
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
+  
+  // Email + Password login
+  const signInWithEmail = async (email: string, password: string) => {
     setLoading(true);
-    console.log("Starting sign in process...");
     
     try {
-      let signInResult;
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
       
-      if (loginType === "email") {
-        signInResult = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-      } else {
-        // For username login, need to find the email first
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('email')
-          .eq('username', username)
-          .single();
+      if (authError) throw authError;
+      
+      // If authentication is successful but we're not sure if they have a profile
+      if (authData.user) {
+        try {
+          // Check if user has a profile
+          const { data: userData } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', authData.user.id)
+            .maybeSingle();
           
-        if (userError) {
-          toast.error("Username not found. Please check your username or sign in with email.");
-          setLoading(false);
-          return;
+          // If no profile found, create one using the auth data
+          if (!userData && authData.user) {
+            // We'll use a null check to avoid the TypeScript error
+            if (authData.user) {
+              await supabase
+                .from('users')
+                .insert({
+                  id: authData.user.id,
+                  username: authData.user.email?.split('@')[0] || `user_${Date.now()}`,
+                  email: authData.user.email,
+                  full_name: authData.user.user_metadata?.full_name || null
+                });
+            }
+          }
+        } catch (profileError) {
+          console.error("Error checking/creating user profile:", profileError);
+          // Continue with login even if profile check fails
         }
-        
-        signInResult = await supabase.auth.signInWithPassword({
-          email: userData.email,
-          password,
-        });
       }
       
-      const { data, error } = signInResult;
-      
-      if (error) throw error;
-      
-      console.log("Sign in successful, user data:", data);
-      toast.success("Login successful!");
-      navigate("/");
+      return authData;
     } catch (error: any) {
-      console.error("Sign in error:", error);
-      if (error.message.includes("Invalid login")) {
-        toast.error(`Invalid ${loginType === "email" ? "email" : "username"} or password. Please try again.`);
-      } else {
-        toast.error(error.message || "Error during sign in");
+      let errorMessage = error.message || "Failed to sign in";
+      
+      if (error.message.includes("Invalid login credentials")) {
+        errorMessage = "Invalid email or password";
       }
+      
+      toast.error(errorMessage);
+      return { user: null, session: null };
     } finally {
       setLoading(false);
     }
   };
-
+  
+  // Social login methods
+  const signInWithGoogle = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth?provider=google`
+        }
+      });
+      
+      if (error) throw error;
+      return data;
+    } catch (error: any) {
+      toast.error(error.message || "Failed to sign in with Google");
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   return {
-    loginType,
-    setLoginType,
-    email,
-    setEmail,
-    username,
-    setUsername,
-    password, 
-    setPassword,
-    loading,
-    resetDialogOpen,
-    setResetDialogOpen,
-    handleSignIn
+    signInWithEmail,
+    signInWithGoogle,
+    loading
   };
 };

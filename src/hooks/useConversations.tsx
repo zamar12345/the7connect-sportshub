@@ -2,17 +2,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Conversation, ConversationParticipant } from "@/types/messages";
-
-// Define a more explicit type for the database response to prevent deep type instantiation
-type ConversationDetailsResponse = {
-  id: string;
-  last_message: string | null;
-  last_message_at: string | null;
-  updated_at: string | null;
-  participants: any; // Using any here to avoid deep type instantiation
-  unread_count: number | null;
-}
+import { Conversation, ConversationParticipant } from "@/types/supabase";
 
 export const useConversations = (userId?: string) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -33,10 +23,7 @@ export const useConversations = (userId?: string) => {
         .from('conversation_details')
         .select('*')
         // Using a simpler filter approach
-        .filter('participants', 'cs', `[{"id":"${currentUserId}"}]`) as { 
-          data: ConversationDetailsResponse[] | null; 
-          error: any;
-        };
+        .filter('participants', 'cs', `[{"id":"${currentUserId}"}]`);
       
       if (error) throw error;
       
@@ -87,7 +74,7 @@ export const useConversations = (userId?: string) => {
           };
           
           return {
-            id: conv.id,
+            id: conv.id || '',
             user: {
               id: otherParticipant.id,
               name: otherParticipant.full_name || 'Unknown User',
@@ -97,7 +84,7 @@ export const useConversations = (userId?: string) => {
             lastMessage: conv.last_message || "Start a conversation",
             time: conv.last_message_at ? new Date(conv.last_message_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "now",
             unread: conv.unread_count || 0
-          };
+          } as Conversation;
         });
         
         setConversations(formattedConversations);
@@ -123,7 +110,7 @@ export const useConversations = (userId?: string) => {
           lastMessage: "Tap to start messaging",
           time: "now",
           unread: 0
-        }));
+        })) as Conversation[];
         
         setConversations(mockConversations);
       }

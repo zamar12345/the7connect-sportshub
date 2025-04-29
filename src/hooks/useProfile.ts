@@ -4,6 +4,7 @@ import { useSupabaseQuery } from "./useSupabaseQuery";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { User } from "@/types/supabase";
 
 interface ProfileData {
   username: string;
@@ -15,7 +16,7 @@ interface ProfileData {
 }
 
 export function useUserProfile(userId: string | undefined) {
-  return useSupabaseQuery(
+  return useSupabaseQuery<User>(
     ['users', 'profile', userId],
     async () => {
       if (!userId) throw new Error("User ID is required");
@@ -27,7 +28,7 @@ export function useUserProfile(userId: string | undefined) {
         .single();
         
       if (error) throw error;
-      return data;
+      return data as User;
     },
     {
       enabled: !!userId

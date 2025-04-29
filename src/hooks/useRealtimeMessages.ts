@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import type { Message } from "@/types/messages";
+import { Message } from "@/types/supabase";
 
 export function useRealtimeMessages(conversationId: string) {
   const queryClient = useQueryClient();

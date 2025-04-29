@@ -3,9 +3,10 @@ import { useSupabaseQuery } from "./useSupabaseQuery";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchComments, addComment } from "@/services/postService";
 import { toast } from "sonner";
+import { Comment } from "@/types/supabase";
 
 export function useCommentsQuery(postId: string) {
-  return useSupabaseQuery(
+  return useSupabaseQuery<Comment[]>(
     ['comments', postId],
     () => fetchComments(postId),
     {

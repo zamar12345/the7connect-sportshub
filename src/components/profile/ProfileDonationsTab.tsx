@@ -1,123 +1,109 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { CreditCard } from "lucide-react";
 import { useAuth } from "@/context/AuthProvider";
+import { Donation } from "@/types/supabase";
 
-interface ProfileDonationsTabProps {
-  profileId: string;
-}
-
-const ProfileDonationsTab = ({ profileId }: ProfileDonationsTabProps) => {
+const ProfileDonationsTab = ({ userId }: { userId: string }) => {
   const { user } = useAuth();
-  const [donationsLoading, setDonationsLoading] = useState(false);
-  const [receivedDonations, setReceivedDonations] = useState<any[]>([]);
+  const [donations, setDonations] = useState<Donation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const isOwnProfile = user?.id === userId;
 
   useEffect(() => {
-    fetchDonations(profileId);
-  }, [profileId]);
-
-  const fetchDonations = async (userId: string) => {
-    try {
-      setDonationsLoading(true);
-      
-      const { data, error } = await supabase
-        .from("donations_history")
-        .select("*")
-        .eq("recipient_id", userId)
-        .eq("status", "completed")
-        .order("created_at", { ascending: false });
+    const fetchDonations = async () => {
+      setLoading(true);
+      try {
+        let query = supabase
+          .from('donations_history')
+          .select('*');
+          
+        if (isOwnProfile) {
+          // Show both received and sent donations for own profile
+          query = query.or(`recipient_id.eq.${userId},donor_id.eq.${userId}`);
+        } else {
+          // Only show received donations for other users' profiles
+          query = query.eq('recipient_id', userId);
+        }
         
-      if (error) throw error;
-      
-      setReceivedDonations(data || []);
-    } catch (error: any) {
-      console.error("Error fetching donations:", error);
-    } finally {
-      setDonationsLoading(false);
+        const { data, error } = await query
+          .order('created_at', { ascending: false });
+          
+        if (error) throw error;
+        setDonations(data as Donation[]);
+      } catch (error) {
+        console.error('Error fetching donations:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (userId) {
+      fetchDonations();
     }
+  }, [userId, isOwnProfile]);
+
+  const formatAmount = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount);
   };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString(undefined, { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    });
+    return date.toLocaleDateString();
   };
 
-  const totalDonations = receivedDonations.reduce((sum, d) => sum + d.amount, 0);
-  const uniqueDonors = new Set(receivedDonations.map(d => d.donor_id));
+  if (loading) {
+    return (
+      <div className="flex justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (donations.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-muted-foreground">No donations yet</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-4">
-      {donationsLoading ? (
-        <div className="flex justify-center p-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
-        </div>
-      ) : receivedDonations.length > 0 ? (
-        <>
-          <div className="mb-6 grid grid-cols-2 gap-4">
-            <div className="bg-card/50 rounded-lg p-4 text-center">
-              <div className="text-lg font-semibold">${totalDonations.toFixed(2)}</div>
-              <div className="text-xs text-muted-foreground">Total Received</div>
-            </div>
-            <div className="bg-card/50 rounded-lg p-4 text-center">
-              <div className="text-lg font-semibold">{uniqueDonors.size}</div>
-              <div className="text-xs text-muted-foreground">Supporters</div>
-            </div>
-          </div>
-          
-          <h3 className="text-sm font-semibold mb-3">Recent Supporters</h3>
-          <div className="space-y-3">
-            {receivedDonations.slice(0, 5).map((donation) => (
-              <div key={donation.id} className="flex items-center">
-                <Avatar className="h-10 w-10 mr-3">
-                  {donation.donor_avatar ? (
-                    <AvatarImage src={donation.donor_avatar} alt={donation.donor_name || ""} />
-                  ) : (
-                    <AvatarFallback>{(donation.donor_name || "?").charAt(0).toUpperCase()}</AvatarFallback>
-                  )}
-                </Avatar>
-                <div className="flex-1">
-                  <p className="font-medium">{donation.donor_name || donation.donor_username}</p>
-                  {donation.message && (
-                    <p className="text-xs text-muted-foreground truncate max-w-[200px]">"{donation.message}"</p>
-                  )}
-                </div>
-                <div className="text-right">
-                  <p className="font-bold">${donation.amount}</p>
-                  <p className="text-xs text-muted-foreground">{formatDate(donation.created_at)}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          {receivedDonations.length > 5 && (
-            <div className="mt-4 flex justify-center">
-              <Button 
-                variant="outline" 
-                onClick={() => window.location.href = "/donation-history"}
-              >
-                View All Donations
-              </Button>
-            </div>
-          )}
-        </>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-8 text-center">
-          <CreditCard size={40} className="text-muted mb-2" />
-          <p className="text-muted-foreground">No donations received yet</p>
-          {user && user.id === profileId && (
-            <p className="text-sm text-muted-foreground mt-2">
-              Complete your profile to attract supporters.
+    <div className="space-y-4">
+      {donations.map((donation) => (
+        <div key={donation.id} className="border border-border rounded-lg p-4">
+          {isOwnProfile && (
+            <p className="text-sm text-muted-foreground mb-1">
+              {donation.recipient_id === userId ? 'Received from' : 'Sent to'}: 
+              <span className="font-medium ml-1">
+                {donation.recipient_id === userId ? donation.donor_name || 'Anonymous' : 'Someone'}
+              </span>
             </p>
           )}
+          
+          <div className="flex justify-between items-center">
+            <span className="text-lg font-bold">{formatAmount(donation.amount)}</span>
+            <span className="text-sm text-muted-foreground">{formatDate(donation.created_at)}</span>
+          </div>
+          
+          {donation.message && (
+            <p className="mt-2 text-sm italic">"{donation.message}"</p>
+          )}
+          
+          <div className="mt-2">
+            <span className={`text-xs px-2 py-1 rounded-full ${
+              donation.status === 'completed' ? 'bg-green-100 text-green-800' : 
+              donation.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+              'bg-red-100 text-red-800'
+            }`}>
+              {donation.status.charAt(0).toUpperCase() + donation.status.slice(1)}
+            </span>
+          </div>
         </div>
-      )}
+      ))}
     </div>
   );
 };

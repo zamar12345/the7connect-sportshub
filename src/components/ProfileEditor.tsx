@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Label } from "@/components/ui/label";
 import { User } from "lucide-react";
+import { User as UserType } from "@/types/supabase";
 
 type ProfileData = {
   username: string;
@@ -34,13 +35,14 @@ const ProfileEditor = ({ onClose }: { onClose: () => void }) => {
 
   useEffect(() => {
     if (profile) {
+      const typedProfile = profile as UserType;
       setFormData({
-        username: profile.username || "",
-        full_name: profile.full_name || "",
-        bio: profile.bio || "",
-        avatar_url: profile.avatar_url || "",
-        sport: profile.sport || "",
-        disciplines: profile.disciplines || []
+        username: typedProfile.username || "",
+        full_name: typedProfile.full_name || "",
+        bio: typedProfile.bio || "",
+        avatar_url: typedProfile.avatar_url || "",
+        sport: typedProfile.sport || "",
+        disciplines: typedProfile.disciplines || []
       });
     }
   }, [profile]);

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
+import { User, OnboardingSteps } from "@/types/supabase";
 
 interface OnboardingCheckProps {
   children: React.ReactNode;
@@ -39,12 +40,13 @@ const OnboardingCheck = ({ children }: OnboardingCheckProps) => {
             return;
           }
           
-          if (onboardingData) {
-            if (!onboardingData.welcome_completed) {
+          const steps = onboardingData as OnboardingSteps | null;
+          if (steps) {
+            if (!steps.welcome_completed) {
               navigate('/onboarding/welcome');
-            } else if (!onboardingData.profile_completed) {
+            } else if (!steps.profile_completed) {
               navigate('/onboarding/profile');
-            } else if (!onboardingData.interests_completed) {
+            } else if (!steps.interests_completed) {
               navigate('/onboarding/interests');
             } else {
               navigate('/onboarding/complete');

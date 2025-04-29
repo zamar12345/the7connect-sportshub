@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useCommentsQuery, useAddCommentMutation } from "@/hooks/useComments";
 import { toast } from "sonner";
+import { Comment } from "@/types/supabase";
 
 interface CommentSectionProps {
   postId: string;
@@ -81,10 +82,10 @@ const CommentSection = ({ postId }: CommentSectionProps) => {
             <p className="text-sm text-muted-foreground mt-2">Loading comments...</p>
           </div>
         ) : comments.length > 0 ? (
-          comments.map((comment) => (
+          comments.map((comment: Comment) => (
             <div key={comment.id} className="flex gap-3 border-t border-border pt-3">
               <Avatar className="w-8 h-8">
-                <AvatarImage src={comment.user.avatar_url} alt={comment.user.full_name} />
+                <AvatarImage src={comment.user.avatar_url || ''} alt={comment.user.full_name || ''} />
                 <AvatarFallback>{comment.user.full_name?.[0] || comment.user.username?.[0]}</AvatarFallback>
               </Avatar>
               
