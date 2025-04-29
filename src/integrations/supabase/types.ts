@@ -9,732 +9,237 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      comments: {
+      livestreams: {
         Row: {
-          content: string
-          created_at: string | null
-          id: string
-          post_id: string | null
-          user_id: string | null
-        }
-        Insert: {
-          content: string
-          created_at?: string | null
-          id?: string
-          post_id?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          content?: string
-          created_at?: string | null
-          id?: string
-          post_id?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "comments_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "post_details"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "comments_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "posts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "comments_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      conversation_participants: {
-        Row: {
-          conversation_id: string | null
-          created_at: string | null
-          id: string
-          last_read_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          conversation_id?: string | null
-          created_at?: string | null
-          id?: string
-          last_read_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          conversation_id?: string | null
-          created_at?: string | null
-          id?: string
-          last_read_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "conversation_participants_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "conversation_details"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "conversation_participants_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "conversations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "conversation_participants_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      conversations: {
-        Row: {
-          created_at: string | null
-          id: string
-          last_message: string | null
-          last_message_at: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          last_message?: string | null
-          last_message_at?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          last_message?: string | null
-          last_message_at?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      direct_messages: {
-        Row: {
-          content: string
-          conversation_id: string | null
-          created_at: string | null
-          id: string
-          is_read: boolean | null
-          sender_id: string | null
-        }
-        Insert: {
-          content: string
-          conversation_id?: string | null
-          created_at?: string | null
-          id?: string
-          is_read?: boolean | null
-          sender_id?: string | null
-        }
-        Update: {
-          content?: string
-          conversation_id?: string | null
-          created_at?: string | null
-          id?: string
-          is_read?: boolean | null
-          sender_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "direct_messages_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "conversation_details"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "direct_messages_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "conversations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "direct_messages_sender_id_fkey"
-            columns: ["sender_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      donations: {
-        Row: {
-          amount: number
-          created_at: string | null
-          id: string
-          message: string | null
-          recipient_id: string | null
-          status: string | null
-          stripe_session_id: string | null
-          user_id: string | null
-        }
-        Insert: {
-          amount: number
-          created_at?: string | null
-          id?: string
-          message?: string | null
-          recipient_id?: string | null
-          status?: string | null
-          stripe_session_id?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          amount?: number
-          created_at?: string | null
-          id?: string
-          message?: string | null
-          recipient_id?: string | null
-          status?: string | null
-          stripe_session_id?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "donations_recipient_id_fkey"
-            columns: ["recipient_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "donations_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      follows: {
-        Row: {
-          created_at: string | null
-          follower_id: string | null
-          following_id: string | null
-          id: string
-        }
-        Insert: {
-          created_at?: string | null
-          follower_id?: string | null
-          following_id?: string | null
-          id?: string
-        }
-        Update: {
-          created_at?: string | null
-          follower_id?: string | null
-          following_id?: string | null
-          id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "follows_follower_id_fkey"
-            columns: ["follower_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "follows_following_id_fkey"
-            columns: ["following_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      likes: {
-        Row: {
-          created_at: string | null
-          id: string
-          post_id: string | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          post_id?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          post_id?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "likes_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "post_details"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "likes_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "posts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "likes_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      merch_items: {
-        Row: {
-          created_at: string | null
+          created_at: string
+          created_by: string | null
           description: string | null
           id: string
-          image_url: string | null
-          name: string
-          price: number
-          status: string | null
-          stock: number
-          updated_at: string | null
-          user_id: string
+          is_featured: boolean | null
+          is_live: boolean | null
+          league: string | null
+          scheduled_end: string | null
+          scheduled_start: string
+          sport: string
+          stream_url: string | null
+          teams: string
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+          viewer_count: number | null
         }
         Insert: {
-          created_at?: string | null
+          created_at?: string
+          created_by?: string | null
           description?: string | null
           id?: string
-          image_url?: string | null
-          name: string
-          price: number
-          status?: string | null
-          stock?: number
-          updated_at?: string | null
-          user_id: string
+          is_featured?: boolean | null
+          is_live?: boolean | null
+          league?: string | null
+          scheduled_end?: string | null
+          scheduled_start: string
+          sport: string
+          stream_url?: string | null
+          teams: string
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+          viewer_count?: number | null
         }
         Update: {
-          created_at?: string | null
+          created_at?: string
+          created_by?: string | null
           description?: string | null
           id?: string
-          image_url?: string | null
-          name?: string
-          price?: number
-          status?: string | null
-          stock?: number
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "merch_items_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      messages: {
-        Row: {
-          content: string
-          created_at: string | null
-          id: string
-          receiver_id: string | null
-          sender_id: string | null
-        }
-        Insert: {
-          content: string
-          created_at?: string | null
-          id?: string
-          receiver_id?: string | null
-          sender_id?: string | null
-        }
-        Update: {
-          content?: string
-          created_at?: string | null
-          id?: string
-          receiver_id?: string | null
-          sender_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "messages_receiver_id_fkey"
-            columns: ["receiver_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "messages_sender_id_fkey"
-            columns: ["sender_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      notifications: {
-        Row: {
-          actor_id: string | null
-          content: string | null
-          created_at: string | null
-          id: string
-          is_read: boolean | null
-          reference_id: string | null
-          type: string
-          user_id: string
-        }
-        Insert: {
-          actor_id?: string | null
-          content?: string | null
-          created_at?: string | null
-          id?: string
-          is_read?: boolean | null
-          reference_id?: string | null
-          type: string
-          user_id: string
-        }
-        Update: {
-          actor_id?: string | null
-          content?: string | null
-          created_at?: string | null
-          id?: string
-          is_read?: boolean | null
-          reference_id?: string | null
-          type?: string
-          user_id?: string
+          is_featured?: boolean | null
+          is_live?: boolean | null
+          league?: string | null
+          scheduled_end?: string | null
+          scheduled_start?: string
+          sport?: string
+          stream_url?: string | null
+          teams?: string
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          viewer_count?: number | null
         }
         Relationships: []
       }
-      onboarding_steps: {
+      profiles: {
         Row: {
-          created_at: string | null
-          id: string
-          interests_completed: boolean | null
-          profile_completed: boolean | null
-          updated_at: string | null
-          user_id: string
-          welcome_completed: boolean | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          interests_completed?: boolean | null
-          profile_completed?: boolean | null
-          updated_at?: string | null
-          user_id: string
-          welcome_completed?: boolean | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          interests_completed?: boolean | null
-          profile_completed?: boolean | null
-          updated_at?: string | null
-          user_id?: string
-          welcome_completed?: boolean | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "onboarding_steps_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      orders: {
-        Row: {
-          buyer_id: string
-          created_at: string | null
-          id: string
-          merch_id: string
-          quantity: number
-          shipping_address: string
-          status: string | null
-          total_amount: number
-          updated_at: string | null
-        }
-        Insert: {
-          buyer_id: string
-          created_at?: string | null
-          id?: string
-          merch_id: string
-          quantity: number
-          shipping_address: string
-          status?: string | null
-          total_amount: number
-          updated_at?: string | null
-        }
-        Update: {
-          buyer_id?: string
-          created_at?: string | null
-          id?: string
-          merch_id?: string
-          quantity?: number
-          shipping_address?: string
-          status?: string | null
-          total_amount?: number
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "orders_buyer_id_fkey"
-            columns: ["buyer_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "orders_merch_id_fkey"
-            columns: ["merch_id"]
-            isOneToOne: false
-            referencedRelation: "merch_item_details"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "orders_merch_id_fkey"
-            columns: ["merch_id"]
-            isOneToOne: false
-            referencedRelation: "merch_items"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      posts: {
-        Row: {
-          comments_count: number | null
-          content: string
-          created_at: string | null
-          id: string
-          image_url: string | null
-          likes_count: number | null
-          user_id: string | null
-        }
-        Insert: {
-          comments_count?: number | null
-          content: string
-          created_at?: string | null
-          id?: string
-          image_url?: string | null
-          likes_count?: number | null
-          user_id?: string | null
-        }
-        Update: {
-          comments_count?: number | null
-          content?: string
-          created_at?: string | null
-          id?: string
-          image_url?: string | null
-          likes_count?: number | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "posts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      users: {
-        Row: {
-          achievements: Json | null
           avatar_url: string | null
-          bio: string | null
-          created_at: string | null
-          disciplines: string[] | null
-          email: string | null
-          followers: number | null
-          following: number | null
-          full_name: string | null
+          created_at: string
+          first_name: string | null
           id: string
-          onboarding_completed: boolean | null
-          sport: string | null
-          stats: Json | null
-          username: string
+          last_name: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
         }
         Insert: {
-          achievements?: Json | null
           avatar_url?: string | null
-          bio?: string | null
-          created_at?: string | null
-          disciplines?: string[] | null
-          email?: string | null
-          followers?: number | null
-          following?: number | null
-          full_name?: string | null
-          id?: string
-          onboarding_completed?: boolean | null
-          sport?: string | null
-          stats?: Json | null
-          username: string
+          created_at?: string
+          first_name?: string | null
+          id: string
+          last_name?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
         }
         Update: {
-          achievements?: Json | null
           avatar_url?: string | null
-          bio?: string | null
-          created_at?: string | null
-          disciplines?: string[] | null
-          email?: string | null
-          followers?: number | null
-          following?: number | null
-          full_name?: string | null
+          created_at?: string
+          first_name?: string | null
           id?: string
-          onboarding_completed?: boolean | null
-          sport?: string | null
-          stats?: Json | null
-          username?: string
+          last_name?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
         }
         Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean | null
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          plan_type: string
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          plan_type: string
+          status: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          plan_type?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      videos: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          duration: number | null
+          game_date: string
+          id: string
+          is_featured: boolean | null
+          sport: string
+          teams: string
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+          video_url: string
+          view_count: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          duration?: number | null
+          game_date: string
+          id?: string
+          is_featured?: boolean | null
+          sport: string
+          teams: string
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+          video_url: string
+          view_count?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          duration?: number | null
+          game_date?: string
+          id?: string
+          is_featured?: boolean | null
+          sport?: string
+          teams?: string
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          video_url?: string
+          view_count?: number | null
+        }
+        Relationships: []
+      }
+      watchlist: {
+        Row: {
+          created_at: string
+          id: string
+          livestream_id: string | null
+          user_id: string
+          video_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          livestream_id?: string | null
+          user_id: string
+          video_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          livestream_id?: string | null
+          user_id?: string
+          video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "watchlist_livestream_id_fkey"
+            columns: ["livestream_id"]
+            isOneToOne: false
+            referencedRelation: "livestreams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "watchlist_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
-      conversation_details: {
-        Row: {
-          created_at: string | null
-          id: string | null
-          last_message: string | null
-          last_message_at: string | null
-          participants: Json | null
-          unread_count: number | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string | null
-          last_message?: string | null
-          last_message_at?: string | null
-          participants?: never
-          unread_count?: never
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string | null
-          last_message?: string | null
-          last_message_at?: string | null
-          participants?: never
-          unread_count?: never
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      donations_history: {
-        Row: {
-          amount: number | null
-          created_at: string | null
-          donor_avatar: string | null
-          donor_id: string | null
-          donor_name: string | null
-          donor_username: string | null
-          id: string | null
-          message: string | null
-          recipient_avatar: string | null
-          recipient_id: string | null
-          recipient_name: string | null
-          recipient_username: string | null
-          status: string | null
-          stripe_session_id: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "donations_recipient_id_fkey"
-            columns: ["recipient_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "donations_user_id_fkey"
-            columns: ["donor_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      merch_item_details: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          id: string | null
-          image_url: string | null
-          name: string | null
-          price: number | null
-          seller_avatar_url: string | null
-          seller_full_name: string | null
-          seller_username: string | null
-          status: string | null
-          stock: number | null
-          total_orders: number | null
-          total_sold: number | null
-          updated_at: string | null
-          user_id: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "merch_items_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      post_details: {
-        Row: {
-          avatar_url: string | null
-          comments_count: number | null
-          content: string | null
-          created_at: string | null
-          full_name: string | null
-          id: string | null
-          image_url: string | null
-          likes_count: number | null
-          user_id: string | null
-          username: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "posts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
-      get_unread_count: {
-        Args: { conversation_id_param: string }
-        Returns: number
-      }
-      mark_messages_as_read: {
-        Args: { conversation_id_param: string }
-        Returns: undefined
+      is_admin: {
+        Args: { user_id?: string }
+        Returns: boolean
       }
     }
     Enums: {
-      [_ in never]: never
+      user_role: "user" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -849,6 +354,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      user_role: ["user", "admin"],
+    },
   },
 } as const
