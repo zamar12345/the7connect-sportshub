@@ -564,8 +564,24 @@ export type Database = {
       }
     }
     Functions: {
+      decrement_counter: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      follow_user: {
+        Args: { follower: string; following: string }
+        Returns: undefined
+      }
+      increment_counter: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       mark_messages_as_read: {
         Args: { conversation_id_param: string }
+        Returns: undefined
+      }
+      unfollow_user: {
+        Args: { follower: string; following: string }
         Returns: undefined
       }
     }

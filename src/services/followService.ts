@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -41,11 +42,12 @@ export const toggleFollow = async (profileId: string): Promise<boolean> => {
     
     // If already following, unfollow
     if (existingFollow) {
-      // Begin a transaction to ensure both operations complete successfully
-      const { error: unfollowError } = await supabase.rpc('unfollow_user', {
-        follower: currentUserId,
-        following: profileId
-      });
+      // Use the RPC function to unfollow and update counts
+      const { error: unfollowError } = await supabase
+        .rpc('unfollow_user', {
+          follower: currentUserId,
+          following: profileId
+        });
       
       if (unfollowError) {
         console.error("Error while unfollowing:", unfollowError);
@@ -59,8 +61,8 @@ export const toggleFollow = async (profileId: string): Promise<boolean> => {
         
         // Update followers and following counts manually if RPC failed
         await Promise.all([
-          supabase.from('users').update({ followers: supabase.rpc('decrement_counter') }).eq('id', profileId),
-          supabase.from('users').update({ following: supabase.rpc('decrement_counter') }).eq('id', currentUserId)
+          updateCounter(profileId, 'followers', -1),
+          updateCounter(currentUserId, 'following', -1)
         ]);
       }
       
@@ -71,11 +73,12 @@ export const toggleFollow = async (profileId: string): Promise<boolean> => {
     } 
     // Otherwise follow the user
     else {
-      // Begin a transaction to ensure both operations complete successfully
-      const { error: followError } = await supabase.rpc('follow_user', {
-        follower: currentUserId,
-        following: profileId
-      });
+      // Use the RPC function to follow and update counts
+      const { error: followError } = await supabase
+        .rpc('follow_user', {
+          follower: currentUserId,
+          following: profileId
+        });
       
       if (followError) {
         console.error("Error while following:", followError);
@@ -91,8 +94,8 @@ export const toggleFollow = async (profileId: string): Promise<boolean> => {
         
         // Update followers and following counts manually if RPC failed
         await Promise.all([
-          supabase.from('users').update({ followers: supabase.rpc('increment_counter') }).eq('id', profileId),
-          supabase.from('users').update({ following: supabase.rpc('increment_counter') }).eq('id', currentUserId)
+          updateCounter(profileId, 'followers', 1),
+          updateCounter(currentUserId, 'following', 1)
         ]);
       }
       
@@ -107,6 +110,25 @@ export const toggleFollow = async (profileId: string): Promise<boolean> => {
     throw error;
   }
 };
+
+// Helper function to manually update counters
+async function updateCounter(userId: string, field: 'followers' | 'following', change: number): Promise<void> {
+  const { data } = await supabase
+    .from('users')
+    .select(field)
+    .eq('id', userId)
+    .single();
+  
+  if (data) {
+    const currentValue = data[field] || 0;
+    const newValue = Math.max(0, currentValue + change);
+    
+    await supabase
+      .from('users')
+      .update({ [field]: newValue })
+      .eq('id', userId);
+  }
+}
 
 // Get list of users followed by the current user
 export const getFollowingList = async () => {
