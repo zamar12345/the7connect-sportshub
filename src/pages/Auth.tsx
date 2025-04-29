@@ -18,11 +18,6 @@ const Auth = () => {
   const [verificationSuccess, setVerificationSuccess] = useState(false);
   const { user, loading } = useAuth();
 
-  // Redirect logged in users to home
-  if (user && !loading) {
-    return <Navigate to="/home" replace />;
-  }
-
   useEffect(() => {
     const reset = searchParams.get("reset");
     if (reset === "true") {
@@ -39,6 +34,24 @@ const Auth = () => {
       setVerificationSuccess(true);
     }
   }, [searchParams]);
+
+  // Don't use early return with hooks - move inside the rendering section
+  if (loading) {
+    return (
+      <AuthContainer 
+        title="Loading"
+        subtitle="Please wait..."
+      >
+        <div className="flex justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        </div>
+      </AuthContainer>
+    );
+  }
+
+  if (user) {
+    return <Navigate to="/home" replace />;
+  }
 
   if (isResetMode) {
     return (
