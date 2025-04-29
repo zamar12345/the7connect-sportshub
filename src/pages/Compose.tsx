@@ -1,17 +1,15 @@
-
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, Image, Video, MapPin, Smile, ArrowLeft, Loader2, CheckCircle2 } from "lucide-react";
+import { X, Image, Video, MapPin, Smile, ArrowLeft, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useAuth } from "@/context/AuthProvider";
+import { useAuth } from "@/context/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { uploadMedia, VALID_IMAGE_TYPES, VALID_VIDEO_TYPES } from "@/services/mediaService";
 import { createPost } from "@/services/postService";
 import { MediaUploadPreview } from "@/components/MediaUploadPreview";
-import { Progress } from "@/components/ui/progress";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import EmojiPicker from "@/components/EmojiPicker";
@@ -120,7 +118,6 @@ const Compose = () => {
       // Upload media if present
       if (mediaFile) {
         const isImage = VALID_IMAGE_TYPES.includes(mediaFile.type);
-        const isVideo = VALID_VIDEO_TYPES.includes(mediaFile.type);
         
         setUploadProgress(10);
         
@@ -136,7 +133,7 @@ const Compose = () => {
         
         if (isImage) {
           finalImageUrl = uploadedUrl;
-        } else if (isVideo) {
+        } else {
           finalVideoUrl = uploadedUrl;
         }
         
@@ -147,7 +144,7 @@ const Compose = () => {
       const hashtags = extractHashtags(content);
       
       // Create the post with location
-      const post = await createPost(content, finalImageUrl, finalVideoUrl, location || undefined);
+      await createPost(content, finalImageUrl, finalVideoUrl, location || undefined);
       
       toast.success("Post created successfully!");
       navigate("/home");

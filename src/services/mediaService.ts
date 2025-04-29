@@ -49,6 +49,16 @@ export const uploadMedia = async ({ file, userId, onProgress }: UploadMediaOptio
       onProgress(10);
     }
     
+    // Make sure the post-media bucket exists
+    const { data: buckets } = await supabase.storage.listBuckets();
+    if (!buckets?.find(b => b.name === 'post-media')) {
+      console.log("Creating post-media bucket");
+      await supabase.storage.createBucket('post-media', {
+        public: true,
+        fileSizeLimit: 52428800 // 50MB
+      });
+    }
+    
     // Upload to Supabase Storage
     const { data, error } = await supabase.storage
       .from('post-media')
@@ -58,6 +68,7 @@ export const uploadMedia = async ({ file, userId, onProgress }: UploadMediaOptio
       });
       
     if (error) {
+      console.error("Upload error:", error);
       throw error;
     }
     

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -81,8 +80,8 @@ const CreateStoryDialog = ({ open, onOpenChange, onSuccess }: CreateStoryDialogP
           user_id: user.id,
           image_url: publicUrlData.publicUrl,
           caption: caption || null,
-          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
-        } as any);
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours from now
+        });
 
       if (storyError) throw storyError;
 

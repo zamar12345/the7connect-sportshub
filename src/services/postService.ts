@@ -141,6 +141,8 @@ export const createPost = async (
     
     const userId = session.session.user.id;
     
+    console.log("Creating post with image:", imageUrl);
+    
     // Create the post in the database
     const { data, error } = await supabase
       .from('posts')
@@ -158,6 +160,7 @@ export const createPost = async (
       .single();
       
     if (error) {
+      console.error("Post creation error:", error);
       throw error;
     }
     

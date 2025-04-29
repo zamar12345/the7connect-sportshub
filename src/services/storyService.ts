@@ -35,7 +35,7 @@ export const fetchStories = async (): Promise<Story[]> => {
       throw error;
     }
     
-    return (data || []) as unknown as Story[];
+    return data as unknown as Story[];
   } catch (error) {
     console.error("Error fetching stories:", error);
     return [];
@@ -63,7 +63,7 @@ export const fetchUserStories = async (userId: string): Promise<Story[]> => {
       throw error;
     }
     
-    return (data || []) as unknown as Story[];
+    return data as unknown as Story[];
   } catch (error) {
     console.error("Error fetching user stories:", error);
     return [];
@@ -73,13 +73,18 @@ export const fetchUserStories = async (userId: string): Promise<Story[]> => {
 // Mark a story as viewed
 export const markStoryViewed = async (storyId: string): Promise<boolean> => {
   try {
+    const user = await supabase.auth.getUser();
+    if (!user.data.user) {
+      throw new Error("No authenticated user found");
+    }
+
     // Insert into story_views table
     const { error } = await supabase
       .from('story_views')
       .insert({ 
         story_id: storyId,
-        viewer_id: supabase.auth.getUser().then(res => res.data.user?.id) 
-      } as any);
+        viewer_id: user.data.user.id
+      });
       
     if (error) {
       throw error;
