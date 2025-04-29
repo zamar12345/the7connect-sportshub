@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -49,7 +50,8 @@ export const SignUpForm = () => {
     
     try {
       const fullName = `${values.firstName} ${values.lastName}`;
-      const username = values.email.split('@')[0];
+      // Changed from const to let since we might need to modify it later
+      let username = values.email.split('@')[0];
       
       // First create the user profile to ensure it exists BEFORE auth signup
       // This prevents the race condition with onboarding_steps
@@ -68,9 +70,8 @@ export const SignUpForm = () => {
       
       if (existingUsers) {
         // Generate a unique username if the email username already exists
-        const uniqueUsername = `${username}_${Math.floor(Math.random() * 1000)}`;
-        console.log(`Username ${username} already exists, using ${uniqueUsername} instead`);
-        username = uniqueUsername;
+        username = `${username}_${Math.floor(Math.random() * 1000)}`;
+        console.log(`Username already exists, using ${username} instead`);
       }
 
       // Create the user in the auth system with metadata
