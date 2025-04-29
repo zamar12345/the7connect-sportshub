@@ -49,13 +49,15 @@ export const SignupFormContent = () => {
         return;
       }
 
-      // Format user metadata properly as a plain object (not stringified JSON)
+      // Create a plain JavaScript object for metadata (no nested structures)
       const userMetadata = {
         first_name: values.firstName,
         last_name: values.lastName,
         full_name: fullName,
         username: username
       };
+      
+      console.log("Sending metadata:", userMetadata);
 
       // Create the user in the auth system with metadata
       const { data, error } = await supabase.auth.signUp({
