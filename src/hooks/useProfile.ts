@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useSupabaseQuery } from "./useSupabaseQuery";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -70,8 +71,8 @@ export function useUserProfile(userId: string | undefined) {
           throw new Error("No user data returned");
         }
         
-        // Return the data as User type
-        return data as User;
+        // Return the data as User type - force the type here since we know the structure matches
+        return data as unknown as User;
       } catch (error: any) {
         // Make sure any caught errors are propagated as Error objects
         if (error instanceof Error) {
