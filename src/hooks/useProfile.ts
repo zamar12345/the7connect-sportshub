@@ -16,6 +16,8 @@ interface ProfileData {
 }
 
 export function useUserProfile(userId: string | undefined) {
+  const baseFields = "id, username, full_name, avatar_url, bio, sport, disciplines";
+  
   return useSupabaseQuery<User>(
     ['users', 'profile', userId],
     async () => {
@@ -25,7 +27,7 @@ export function useUserProfile(userId: string | undefined) {
         // First attempt to fetch with banner_url
         const { data, error } = await supabase
           .from("users")
-          .select("id, username, full_name, avatar_url, banner_url, bio, sport, disciplines")
+          .select(`${baseFields}, banner_url`)
           .eq("id", userId)
           .single();
           
@@ -37,7 +39,7 @@ export function useUserProfile(userId: string | undefined) {
             // Fallback: fetch without banner_url in this case
             const { data: fallbackData, error: fallbackError } = await supabase
               .from("users")
-              .select("id, username, full_name, avatar_url, bio, sport, disciplines")
+              .select(baseFields)
               .eq("id", userId)
               .single();
               
