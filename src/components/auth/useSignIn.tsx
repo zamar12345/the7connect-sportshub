@@ -2,8 +2,10 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 export const useSignIn = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [loginType, setLoginType] = useState<"email" | "username">("email");
   const [email, setEmail] = useState("");
@@ -22,6 +24,9 @@ export const useSignIn = () => {
       });
       
       if (authError) throw authError;
+      
+      toast.success("Successfully logged in!");
+      navigate('/home');
       
       // If authentication is successful but we're not sure if they have a profile
       if (authData.user) {
