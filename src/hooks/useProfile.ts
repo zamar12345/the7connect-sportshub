@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useSupabaseQuery } from "./useSupabaseQuery";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -53,12 +52,13 @@ export function useUserProfile(userId: string | undefined) {
               throw new Error("No user data returned");
             }
             
-            // Return the data with a null banner_url
-            // Fix: Explicitly create a User object with the fallback data
-            return { 
-              ...fallbackData, 
-              banner_url: null 
-            } as User; // This is now safe since we're creating a proper User object
+            // Create a proper User object with the fallback data and null banner_url
+            const userWithNullBanner: User = {
+              ...fallbackData,
+              banner_url: null
+            };
+            
+            return userWithNullBanner;
           } else {
             // For other types of errors
             console.error("Error in profile query:", error.message);
