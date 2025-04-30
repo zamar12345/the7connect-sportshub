@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useSupabaseQuery } from "./useSupabaseQuery";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
