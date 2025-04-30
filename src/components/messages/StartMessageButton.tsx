@@ -17,29 +17,28 @@ const StartMessageButton = ({ userId, username, className = "" }: StartMessageBu
   const [isLoading, setIsLoading] = useState(false);
 
   const handleStartConversation = async () => {
+    if (isLoading) return;
+    
     try {
       setIsLoading(true);
       
-      // Navigate to messages first, then try to start conversation there
-      navigate('/messages');
+      // Get the conversation ID first
+      const conversationId = await startConversationFromProfile(userId, username);
       
-      // Small delay to ensure navigation happens first
-      setTimeout(async () => {
-        try {
-          const conversationId = await startConversationFromProfile(userId, username);
-          if (!conversationId) {
-            console.log("No conversation ID returned but no error was thrown");
-          }
-        } catch (error) {
-          console.error("Error after navigation:", error);
-        } finally {
-          setIsLoading(false);
-        }
-      }, 100);
-      
+      if (conversationId) {
+        // If we got a conversation ID, navigate to the messages page with that ID
+        navigate(`/messages?conversation=${conversationId}`);
+      } else {
+        // Failed to get conversation ID but no error was thrown
+        console.log("No conversation ID returned but no error was thrown");
+        navigate('/messages'); // Navigate to messages anyway
+      }
     } catch (error: any) {
       console.error("Error starting conversation:", error);
       toast.error(`Could not start conversation: ${error.message}`);
+      // Still navigate to messages even if there was an error
+      navigate('/messages');
+    } finally {
       setIsLoading(false);
     }
   };

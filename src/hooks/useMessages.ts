@@ -16,24 +16,30 @@ export function useMessageQuery(conversationId: string) {
     async () => {
       if (!conversationId) return [];
       
-      const { data, error } = await supabase
-        .from('direct_messages')
-        .select('*')
-        .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true });
-      
-      if (error) {
-        console.error("Error fetching messages:", error);
-        throw error;
+      try {
+        const { data, error } = await supabase
+          .from('direct_messages')
+          .select('*')
+          .eq('conversation_id', conversationId)
+          .order('created_at', { ascending: true });
+        
+        if (error) {
+          console.error("Error fetching messages:", error);
+          throw error;
+        }
+        
+        return data || [];
+      } catch (error) {
+        console.error("Error in useMessageQuery:", error);
+        return [];
       }
-      
-      return data || [];
     },
     {
       enabled: !!conversationId && isSubscribed,
       // Increase cache time to reduce refetching
       staleTime: 10000,
       gcTime: 30000, // Changed from cacheTime to gcTime
+      retry: 1, // Limit retries on error
     }
   );
 }
@@ -94,72 +100,115 @@ export function useConversationsList() {
           throw new Error("User not authenticated");
         }
         
-        // Get conversations with latest messages and participants using the updated view
-        const { data, error } = await supabase
-          .from('conversation_details')
-          .select('*')
-          .order('last_message_at', { ascending: false });
+        // First get all conversations this user participates in
+        const { data: participations, error: participationsError } = await supabase
+          .from('conversation_participants')
+          .select('conversation_id')
+          .eq('user_id', currentUserId);
         
-        if (error) {
-          console.error("Error fetching conversations:", error);
-          throw error;
+        if (participationsError) {
+          console.error("Error fetching participant data:", participationsError);
+          throw participationsError;
         }
         
-        if (!data || data.length === 0) {
+        if (!participations || participations.length === 0) {
           return [];
         }
-
-        return data.map(conv => {
-          // Safely handle participants, which could be a JSON array or string
-          let participantsArray = [];
-          if (conv.participants) {
-            try {
-              // If it's a string, parse it
-              if (typeof conv.participants === 'string') {
-                participantsArray = JSON.parse(conv.participants);
-              } 
-              // If it's already an array or object
-              else if (Array.isArray(conv.participants)) {
-                participantsArray = conv.participants;
-              }
-              // If it's an object but not an array
-              else if (typeof conv.participants === 'object') {
-                participantsArray = [conv.participants];
-              }
-            } catch (e) {
-              console.error('Error parsing participants:', e);
-              participantsArray = [];
+        
+        // Get the conversation IDs
+        const conversationIds = participations.map(p => p.conversation_id);
+        
+        // Get conversations basic data
+        const { data: conversations, error: conversationsError } = await supabase
+          .from('conversations')
+          .select('id, created_at, updated_at, last_message, last_message_at')
+          .in('id', conversationIds);
+        
+        if (conversationsError) {
+          console.error("Error fetching conversations:", conversationsError);
+          throw conversationsError;
+        }
+        
+        if (!conversations || conversations.length === 0) {
+          return [];
+        }
+        
+        // For each conversation, get the other participant
+        const result = await Promise.all(conversations.map(async (conv) => {
+          try {
+            // Get other participants
+            const { data: otherParticipants, error: participantsError } = await supabase
+              .from('conversation_participants')
+              .select(`
+                user_id,
+                users:user_id (
+                  id, 
+                  full_name, 
+                  avatar_url,
+                  username
+                )
+              `)
+              .eq('conversation_id', conv.id)
+              .neq('user_id', currentUserId)
+              .limit(1)
+              .single();
+              
+            if (participantsError) {
+              console.error(`Error fetching participants for conversation ${conv.id}:`, participantsError);
+              return null;
             }
-          }
-          
-          // Find the other participant (not current user)
-          const otherParticipant = Array.isArray(participantsArray) ? 
-            participantsArray.find((p: any) => p.id !== currentUserId) : null;
             
-          return {
-            id: conv.id || '',
-            lastMessage: conv.last_message || 'Start a conversation',
-            time: conv.last_message_at 
-              ? new Date(conv.last_message_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-              : 'now',
-            unread: conv.unread_count || 0,
-            user: {
-              id: otherParticipant?.id || 'unknown',
-              name: otherParticipant?.full_name || otherParticipant?.username || 'Unknown User',
-              avatar: otherParticipant?.avatar_url || '',
-              username: otherParticipant?.username
+            // Get unread count
+            const { count, error: countError } = await supabase
+              .from('direct_messages')
+              .select('id', { count: 'exact', head: true })
+              .eq('conversation_id', conv.id)
+              .eq('is_read', false)
+              .neq('sender_id', currentUserId);
+              
+            if (countError) {
+              console.error(`Error counting unread messages for conversation ${conv.id}:`, countError);
             }
-          };
-        });
+            
+            const otherUser = otherParticipants?.users || {
+              id: 'unknown',
+              full_name: 'Unknown User',
+              avatar_url: null,
+              username: null
+            };
+            
+            return {
+              id: conv.id,
+              lastMessage: conv.last_message || 'Start a conversation',
+              time: conv.last_message_at 
+                ? new Date(conv.last_message_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+                : 'now',
+              unread: count || 0,
+              user: {
+                id: otherUser.id,
+                name: otherUser.full_name || otherUser.username || 'Unknown User',
+                avatar: otherUser.avatar_url || '',
+                username: otherUser.username
+              }
+            };
+          } catch (error) {
+            console.error(`Error processing conversation ${conv.id}:`, error);
+            return null;
+          }
+        }));
+        
+        // Filter out any null results from errors
+        return result.filter(item => item !== null) as Conversation[];
       } catch (error) {
         console.error("Error in useConversationsList:", error);
-        throw error;
+        return [];
       }
     },
     {
       // Increase cache time to reduce refetching
       staleTime: 5000,
       gcTime: 30000, // Changed from cacheTime to gcTime
+      retry: 1, // Limit retries on error
     }
   );
 }
