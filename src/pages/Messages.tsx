@@ -7,6 +7,7 @@ import ConversationList from "@/components/messages/ConversationList";
 import ConversationView from "@/components/messages/ConversationView";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const Messages = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -21,8 +22,19 @@ const Messages = () => {
     }
   }, [isAuthenticated, isLoading, navigate]);
 
-  const handleSelectConversation = (conversation: Conversation) => {
+  const handleSelectConversation = async (conversation: Conversation) => {
     setSelectedConversation(conversation);
+    
+    // Mark messages as read when selecting a conversation
+    if (conversation.id && user?.id) {
+      try {
+        await supabase.rpc('mark_messages_as_read', {
+          conversation_id_param: conversation.id
+        });
+      } catch (error) {
+        console.error("Error marking messages as read:", error);
+      }
+    }
   };
 
   const handleBack = () => {

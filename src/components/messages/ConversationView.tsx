@@ -1,5 +1,5 @@
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ArrowLeft, Send } from "lucide-react";
@@ -8,7 +8,7 @@ import DonateButton from "@/components/DonateButton";
 import { Conversation } from "@/types/messages";
 import MessageBubble from "./MessageBubble";
 import { useMessageQuery, useSendMessage } from "@/hooks/useMessages";
-import { useEffect } from "react";
+import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"; 
 
 type ConversationViewProps = {
   conversation: Conversation;
@@ -26,12 +26,20 @@ const ConversationView = ({ conversation, currentUserId, onBack }: ConversationV
     isLoading
   } = useMessageQuery(conversation.id);
   
+  // Set up real-time messaging and mark-as-read functionality
+  const { markMessageAsRead } = useRealtimeMessages(conversation.id);
+  
   // Send message mutation
   const sendMessageMutation = useSendMessage(conversation.id, currentUserId);
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+    
+    // Mark messages as read when conversation is opened
+    if (conversation.id) {
+      markMessageAsRead(conversation.id);
+    }
+  }, [conversation.id, markMessageAsRead, messages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -53,9 +61,6 @@ const ConversationView = ({ conversation, currentUserId, onBack }: ConversationV
       is_read: false,
       conversation_id: conversation.id
     };
-    
-    // Append optimistic message to UI
-    const messagesList = [...messages, optimisticMessage];
     
     // Send to server in background
     sendMessageMutation.mutate(messageText);
