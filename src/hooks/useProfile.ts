@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useSupabaseQuery } from "./useSupabaseQuery";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -53,7 +54,11 @@ export function useUserProfile(userId: string | undefined) {
             }
             
             // Return the data with a null banner_url
-            return { ...fallbackData, banner_url: null } as User;
+            // Fix: Explicitly create a User object with the fallback data
+            return { 
+              ...fallbackData, 
+              banner_url: null 
+            } as User; // This is now safe since we're creating a proper User object
           } else {
             // For other types of errors
             console.error("Error in profile query:", error.message);
