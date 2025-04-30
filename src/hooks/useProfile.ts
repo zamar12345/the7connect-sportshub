@@ -63,7 +63,7 @@ export function useUserProfile(userId: string | undefined) {
           throw new Error("No user data returned");
         }
         
-        // Explicitly cast to User to ensure TypeScript understands the type
+        // Return the data as User type
         return data as User;
       } catch (error: any) {
         // Make sure any caught errors are propagated as Error objects
