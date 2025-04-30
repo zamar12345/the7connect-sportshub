@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ConversationParticipant } from "@/types/messages";
@@ -12,38 +13,8 @@ export const createConversation = async (otherUserId: string): Promise<string | 
       return null;
     }
 
-    // Check if a conversation already exists between these users
-    const { data: existingParticipants, error: checkError } = await supabase
-      .from('conversation_participants')
-      .select('conversation_id')
-      .eq('user_id', currentUser.id);
-      
-    if (checkError) {
-      console.error("Error checking existing conversations:", checkError);
-      throw checkError;
-    }
-    
-    // Get conversation IDs where the current user is a participant
-    const currentUserConversationIds = existingParticipants?.map(p => p.conversation_id) || [];
-    
-    // Find conversations where the other user is also a participant
-    const { data: otherUserConversations, error: otherUserError } = await supabase
-      .from('conversation_participants')
-      .select('conversation_id')
-      .eq('user_id', otherUserId)
-      .in('conversation_id', currentUserConversationIds);
-    
-    if (otherUserError) {
-      console.error("Error checking other user conversations:", otherUserError);
-      throw otherUserError;
-    }
-    
-    // If conversation already exists, return its ID
-    if (otherUserConversations && otherUserConversations.length > 0) {
-      return otherUserConversations[0].conversation_id;
-    }
-    
-    // Otherwise, create a new conversation
+    // Simplified approach to avoid recursion issues
+    // First create a conversation
     const { data: conversationData, error: conversationError } = await supabase
       .from('conversations')
       .insert({ })
@@ -55,19 +26,31 @@ export const createConversation = async (otherUserId: string): Promise<string | 
       throw conversationError;
     }
     
-    // Add participants
-    const participants = [
-      { conversation_id: conversationData.id, user_id: currentUser.id },
-      { conversation_id: conversationData.id, user_id: otherUserId }
-    ];
-    
-    const { error: participantsError } = await supabase
+    // Then add participants one by one
+    // First add current user
+    const { error: currentUserError } = await supabase
       .from('conversation_participants')
-      .insert(participants);
+      .insert({ 
+        conversation_id: conversationData.id, 
+        user_id: currentUser.id 
+      });
       
-    if (participantsError) {
-      console.error("Error adding participants:", participantsError);
-      throw participantsError;
+    if (currentUserError) {
+      console.error("Error adding current user as participant:", currentUserError);
+      throw currentUserError;
+    }
+    
+    // Then add other user
+    const { error: otherUserError } = await supabase
+      .from('conversation_participants')
+      .insert({ 
+        conversation_id: conversationData.id, 
+        user_id: otherUserId 
+      });
+      
+    if (otherUserError) {
+      console.error("Error adding other user as participant:", otherUserError);
+      throw otherUserError;
     }
     
     return conversationData.id;
@@ -115,11 +98,57 @@ export const startConversationFromProfile = async (
   navigate?: (path: string) => void
 ) => {
   try {
+    // Check if conversation already exists by querying directly
+    const currentUserSession = await supabase.auth.getSession();
+    const currentUserId = currentUserSession.data.session?.user.id;
+    
+    if (!currentUserId) {
+      toast.error("You must be logged in to start a conversation");
+      return null;
+    }
+
+    // Look for existing conversation
+    const { data: existingConversations, error: searchError } = await supabase
+      .from('conversation_details')
+      .select('*');
+
+    if (!searchError && existingConversations) {
+      // Look through participants to find a conversation with this user
+      const existingConversation = existingConversations.find((conv) => {
+        if (!conv.participants) return false;
+        
+        let participants = [];
+        try {
+          if (typeof conv.participants === 'string') {
+            participants = JSON.parse(conv.participants);
+          } else if (Array.isArray(conv.participants)) {
+            participants = conv.participants;
+          } else if (typeof conv.participants === 'object') {
+            participants = [conv.participants];
+          }
+        } catch (e) {
+          return false;
+        }
+        
+        // Check if both users are in this conversation
+        const hasCurrentUser = participants.some((p: any) => p.id === currentUserId);
+        const hasOtherUser = participants.some((p: any) => p.id === userId);
+        
+        return hasCurrentUser && hasOtherUser;
+      });
+      
+      if (existingConversation) {
+        toast.success(`Conversation with ${username || 'user'} already exists`);
+        if (navigate) navigate('/messages');
+        return existingConversation.id;
+      }
+    }
+    
     const conversationId = await createConversation(userId);
     
-    if (conversationId && navigate) {
+    if (conversationId) {
       toast.success(`Started conversation with ${username || 'user'}`);
-      navigate('/messages');
+      if (navigate) navigate('/messages');
     }
     return conversationId;
   } catch (error: any) {

@@ -4,6 +4,7 @@ import { MessageCircle } from "lucide-react";
 import { startConversationFromProfile } from "@/services/messageService";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { toast } from "sonner";
 
 type StartMessageButtonProps = {
   userId: string;
@@ -18,8 +19,27 @@ const StartMessageButton = ({ userId, username, className = "" }: StartMessageBu
   const handleStartConversation = async () => {
     try {
       setIsLoading(true);
-      await startConversationFromProfile(userId, username, navigate);
-    } finally {
+      
+      // Navigate to messages first, then try to start conversation there
+      navigate('/messages');
+      
+      // Small delay to ensure navigation happens first
+      setTimeout(async () => {
+        try {
+          const conversationId = await startConversationFromProfile(userId, username);
+          if (!conversationId) {
+            console.log("No conversation ID returned but no error was thrown");
+          }
+        } catch (error) {
+          console.error("Error after navigation:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      }, 100);
+      
+    } catch (error: any) {
+      console.error("Error starting conversation:", error);
+      toast.error(`Could not start conversation: ${error.message}`);
       setIsLoading(false);
     }
   };

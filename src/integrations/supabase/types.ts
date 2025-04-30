@@ -576,6 +576,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      is_conversation_participant: {
+        Args: { conversation_uuid: string }
+        Returns: boolean
+      }
       mark_messages_as_read: {
         Args: { conversation_id_param: string }
         Returns: undefined
