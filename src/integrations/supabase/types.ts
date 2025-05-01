@@ -619,6 +619,10 @@ export type Database = {
         Args: { conversation_uuid: string }
         Returns: boolean
       }
+      is_conversation_participant_safe: {
+        Args: { conversation_uuid: string; user_uuid?: string }
+        Returns: boolean
+      }
       mark_messages_as_read: {
         Args: { conversation_id_param: string }
         Returns: undefined

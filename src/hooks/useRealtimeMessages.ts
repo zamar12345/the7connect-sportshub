@@ -45,7 +45,7 @@ export function useRealtimeMessages(conversationId: string) {
     // Create a more specific channel name to avoid conflicts
     const channelName = `conversation:${conversationId}`;
     
-    console.log(`Subscribing to realtime updates for conversation: ${conversationId}`);
+    console.log(`Setting up realtime subscription for conversation: ${conversationId}`);
     
     const setupRealtimeSubscription = () => {
       const channel = supabase
