@@ -4,20 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuthOperations } from "./useAuthOperations";
 import { useUserProfile } from "./useUserProfile";
 import { UserProfile } from "./types";
-
-// Extended AuthContextType to include all needed properties
-interface AuthContextType {
-  user: any;
-  setUser: (user: any) => void;
-  profile: UserProfile | null;
-  loading: boolean;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  resetPassword: (email: string) => Promise<void>;
-  verifyOtp: (email: string, token: string) => Promise<void>;
-  updatePassword: (newPassword: string) => Promise<void>;
-  signOut: () => Promise<void>;
-}
+import { Session, User } from "@supabase/supabase-js";
+import { AuthContextType } from "./types";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -26,7 +14,8 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const { profile, setProfile, handleUserProfile } = useUserProfile();
   const { resetPassword, verifyOtp, updatePassword, signOut } = useAuthOperations();
@@ -36,14 +25,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const isLoading = loading;
 
   useEffect(() => {
+    console.log("Setting up auth state listener");
+    
     // Set up auth listener first
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user || null);
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, newSession) => {
+      console.log(`Auth state change event: ${event}`, newSession?.user?.id || "");
+      
+      setSession(newSession);
+      setUser(newSession?.user || null);
       
       // Use setTimeout to avoid potential deadlock with Supabase client
-      if (session?.user) {
+      if (newSession?.user) {
         setTimeout(() => {
-          handleUserProfile(session.user.id, session.user.user_metadata);
+          handleUserProfile(newSession.user.id, newSession.user.user_metadata);
         }, 0);
       } else {
         setProfile(null);
@@ -51,12 +45,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     });
 
     // Then check current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user || null);
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      console.log("Initial session check:", currentSession ? "Has session" : "No session");
       
-      if (session?.user) {
-        handleUserProfile(session.user.id, session.user.user_metadata);
+      setSession(currentSession);
+      setUser(currentSession?.user || null);
+      
+      if (currentSession?.user) {
+        handleUserProfile(currentSession.user.id, currentSession.user.user_metadata);
       }
+      setLoading(false);
+    }).catch(error => {
+      console.error("Error checking session:", error);
       setLoading(false);
     });
 
@@ -69,8 +69,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   return (
     <AuthContext.Provider 
       value={{ 
+        session,
         user, 
-        setUser, 
         profile,
         loading,
         isAuthenticated,

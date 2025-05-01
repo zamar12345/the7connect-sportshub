@@ -6,7 +6,7 @@ import { AuthContainer } from "@/components/auth/AuthContainer";
 import { SignInForm } from "@/components/auth/SignInForm";
 import { SignUpForm } from "@/components/auth/SignUpForm";
 import { ResetPasswordForm } from "@/components/auth/ResetPasswordForm";
-import { useAuth } from "@/context/AuthProvider";
+import { useAuth } from "@/context/auth/AuthProvider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle } from "lucide-react";
 
@@ -35,7 +35,6 @@ const Auth = () => {
     }
   }, [searchParams]);
 
-  // Don't use early return with hooks - move inside the rendering section
   if (loading) {
     return (
       <AuthContainer 
