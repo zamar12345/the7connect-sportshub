@@ -13,7 +13,7 @@ export const createConversation = async (otherUserId: string): Promise<string | 
       return null;
     }
 
-    // First create the conversation record without any participants
+    // First create the conversation record
     const { data: conversation, error: conversationError } = await supabase
       .from('conversations')
       .insert({})
@@ -27,7 +27,7 @@ export const createConversation = async (otherUserId: string): Promise<string | 
     
     const conversationId = conversation.id;
     
-    // Add both participants using separate insert statements instead of RPC
+    // Add current user as participant
     const { error: currentUserError } = await supabase
       .from('conversation_participants')
       .insert({
@@ -40,6 +40,7 @@ export const createConversation = async (otherUserId: string): Promise<string | 
       throw currentUserError;
     }
     
+    // Add other user as participant
     const { error: otherUserError } = await supabase
       .from('conversation_participants')
       .insert({
@@ -93,7 +94,7 @@ export const getConversationParticipants = async (conversationId: string): Promi
 // Start a conversation with a user from their profile
 export const startConversationFromProfile = async (userId: string): Promise<string | null> => {
   try {
-    // Check if conversation already exists by querying conversation_participants directly
+    // Check if user is authenticated
     const currentUserSession = await supabase.auth.getSession();
     const currentUserId = currentUserSession.data.session?.user.id;
     
@@ -102,26 +103,25 @@ export const startConversationFromProfile = async (userId: string): Promise<stri
       return null;
     }
 
-    // Find existing conversation directly using a query instead of RPC
-    const { data: existingParticipations } = await supabase
+    // First check if a conversation already exists
+    const { data: myConversations } = await supabase
       .from('conversation_participants')
       .select('conversation_id')
       .eq('user_id', currentUserId);
       
-    if (existingParticipations && existingParticipations.length > 0) {
-      // Get all conversations where current user participates
-      const currentUserConversations = existingParticipations.map(p => p.conversation_id);
+    if (myConversations && myConversations.length > 0) {
+      const conversationIds = myConversations.map(p => p.conversation_id);
       
       // Find conversations where the other user also participates
-      const { data: otherUserParticipations } = await supabase
+      const { data: sharedConversations } = await supabase
         .from('conversation_participants')
         .select('conversation_id')
         .eq('user_id', userId)
-        .in('conversation_id', currentUserConversations);
+        .in('conversation_id', conversationIds);
         
-      // If there's a match, return the first conversation ID
-      if (otherUserParticipations && otherUserParticipations.length > 0) {
-        return otherUserParticipations[0].conversation_id;
+      if (sharedConversations && sharedConversations.length > 0) {
+        // Return the first matching conversation ID
+        return sharedConversations[0].conversation_id;
       }
     }
     

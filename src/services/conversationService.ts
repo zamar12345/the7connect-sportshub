@@ -30,36 +30,30 @@ export const createConversation = async (otherUserId: string): Promise<string | 
     
     const conversationId = conversation.id;
     
-    // Add current user as a participant
-    try {
-      const { error: currentUserError } = await supabase
-        .from('conversation_participants')
-        .insert({
-          conversation_id: conversationId,
-          user_id: currentUser.id
-        });
-        
-      if (currentUserError) throw currentUserError;
-    } catch (error) {
-      console.error("Error adding current user to conversation:", error);
-      toast.error("Failed to create conversation");
-      return null;
+    // Add current user as a participant directly
+    const { error: currentUserError } = await supabase
+      .from('conversation_participants')
+      .insert({
+        conversation_id: conversationId,
+        user_id: currentUser.id
+      });
+      
+    if (currentUserError) {
+      console.error("Error adding current user to conversation:", currentUserError);
+      throw currentUserError;
     }
     
-    // Add other user as a participant
-    try {
-      const { error: otherUserError } = await supabase
-        .from('conversation_participants')
-        .insert({
-          conversation_id: conversationId,
-          user_id: otherUserId
-        });
-        
-      if (otherUserError) throw otherUserError;
-    } catch (error) {
-      console.error("Error adding other user to conversation:", error);
-      toast.error("Failed to create conversation");
-      return null;
+    // Add other user as a participant directly (needs to be done by an admin or service role in production)
+    const { error: otherUserError } = await supabase
+      .from('conversation_participants')
+      .insert({
+        conversation_id: conversationId,
+        user_id: otherUserId
+      });
+      
+    if (otherUserError) {
+      console.error("Error adding other user to conversation:", otherUserError);
+      throw otherUserError;
     }
     
     return conversationId;
@@ -84,7 +78,7 @@ export const findOrCreateConversation = async (otherUserId: string): Promise<str
       return null;
     }
     
-    // Find existing conversation by checking if both users are participants in the same conversation
+    // Simplified approach: manually find conversations where both users participate
     const { data: userConversations } = await supabase
       .from('conversation_participants')
       .select('conversation_id')
