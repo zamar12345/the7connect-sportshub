@@ -16,7 +16,7 @@ export function useRealtimeMessages(conversationId: string) {
     try {
       console.log("Marking messages as read for conversation:", conversationId);
       
-      // Directly use rpc to mark messages as read
+      // Directly use rpc to mark messages as read, which uses our security definer function
       const { error } = await supabase.rpc('mark_messages_as_read', {
         conversation_id_param: conversationId
       });
