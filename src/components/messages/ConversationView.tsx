@@ -1,4 +1,3 @@
-
 import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -8,7 +7,7 @@ import DonateButton from "@/components/DonateButton";
 import { Conversation } from "@/types/messages";
 import MessageBubble from "./MessageBubble";
 import { useMessageQuery, useSendMessage } from "@/hooks/useMessages";
-import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"; 
+import { useRealtimeMessages } from "@/hooks/useMessages"; 
 
 type ConversationViewProps = {
   conversation: Conversation;
