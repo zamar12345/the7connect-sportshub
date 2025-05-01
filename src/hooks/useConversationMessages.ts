@@ -53,7 +53,8 @@ export function useSendMessage(conversationId: string, currentUserId: string) {
         throw new Error("Message content cannot be empty");
       }
       
-      const { data, error } = await supabase
+      // First insert the message
+      const { data: messageData, error: messageError } = await supabase
         .from('direct_messages')
         .insert({
           content,
@@ -63,12 +64,26 @@ export function useSendMessage(conversationId: string, currentUserId: string) {
         })
         .select();
       
-      if (error) {
-        console.error("Error sending message:", error);
-        throw error;
+      if (messageError) {
+        console.error("Error sending message:", messageError);
+        throw messageError;
       }
       
-      return data?.[0];
+      // Then update the conversation with the last message
+      const { error: updateError } = await supabase
+        .from('conversations')
+        .update({
+          last_message: content,
+          last_message_at: new Date().toISOString()
+        })
+        .eq('id', conversationId);
+        
+      if (updateError) {
+        console.error("Error updating conversation metadata:", updateError);
+        // Don't throw here, the message was sent successfully
+      }
+      
+      return messageData?.[0];
     },
     onMutate: async (content) => {
       return { content };

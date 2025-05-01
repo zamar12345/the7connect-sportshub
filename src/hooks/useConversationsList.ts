@@ -19,7 +19,8 @@ export function useConversationsList() {
           throw new Error("User not authenticated");
         }
         
-        // First get all conversations this user participates in
+        // Use a simpler approach to get conversations with direct queries
+        // First get all user's conversation participations
         const { data: participations, error: participationsError } = await supabase
           .from('conversation_participants')
           .select('conversation_id')
@@ -34,29 +35,26 @@ export function useConversationsList() {
           return [];
         }
         
-        // Get the conversation IDs
+        // Get conversation IDs user participates in
         const conversationIds = participations.map(p => p.conversation_id);
         
-        // Get conversations basic data
-        const { data: conversations, error: conversationsError } = await supabase
-          .from('conversations')
-          .select('id, created_at, updated_at, last_message, last_message_at')
-          .in('id', conversationIds);
-        
-        if (conversationsError) {
-          console.error("Error fetching conversations:", conversationsError);
-          throw conversationsError;
-        }
-        
-        if (!conversations || conversations.length === 0) {
-          return [];
-        }
-        
-        // For each conversation, get the other participant
-        const result = await Promise.all(conversations.map(async (conv) => {
+        // For each conversation ID, find the other participant and get conversation details
+        const result = await Promise.all(conversationIds.map(async (convId) => {
           try {
-            // Get other participants
-            const { data: otherParticipants, error: participantsError } = await supabase
+            // Get conversation details
+            const { data: conversation, error: convError } = await supabase
+              .from('conversations')
+              .select('id, created_at, updated_at, last_message, last_message_at')
+              .eq('id', convId)
+              .single();
+              
+            if (convError) {
+              console.error(`Error fetching conversation ${convId}:`, convError);
+              return null;
+            }
+            
+            // Find other participant
+            const { data: otherParticipant, error: partError } = await supabase
               .from('conversation_participants')
               .select(`
                 user_id,
@@ -67,29 +65,29 @@ export function useConversationsList() {
                   username
                 )
               `)
-              .eq('conversation_id', conv.id)
+              .eq('conversation_id', convId)
               .neq('user_id', currentUserId)
-              .limit(1)
               .single();
               
-            if (participantsError) {
-              console.error(`Error fetching participants for conversation ${conv.id}:`, participantsError);
+            if (partError) {
+              console.error(`Error fetching other participant for conversation ${convId}:`, partError);
               return null;
             }
             
-            // Get unread count
+            // Count unread messages
             const { count, error: countError } = await supabase
               .from('direct_messages')
               .select('id', { count: 'exact', head: true })
-              .eq('conversation_id', conv.id)
+              .eq('conversation_id', convId)
               .eq('is_read', false)
               .neq('sender_id', currentUserId);
               
             if (countError) {
-              console.error(`Error counting unread messages for conversation ${conv.id}:`, countError);
+              console.error(`Error counting unread messages for conversation ${convId}:`, countError);
+              return null;
             }
             
-            const otherUser = otherParticipants?.users || {
+            const otherUser = otherParticipant?.users || {
               id: 'unknown',
               full_name: 'Unknown User',
               avatar_url: null,
@@ -97,10 +95,10 @@ export function useConversationsList() {
             };
             
             return {
-              id: conv.id,
-              lastMessage: conv.last_message || 'Start a conversation',
-              time: conv.last_message_at 
-                ? new Date(conv.last_message_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+              id: conversation.id,
+              lastMessage: conversation.last_message || 'Start a conversation',
+              time: conversation.last_message_at 
+                ? new Date(conversation.last_message_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
                 : 'now',
               unread: count || 0,
               user: {
@@ -111,20 +109,21 @@ export function useConversationsList() {
               }
             };
           } catch (error) {
-            console.error(`Error processing conversation ${conv.id}:`, error);
+            console.error(`Error processing conversation ${convId}:`, error);
             return null;
           }
         }));
         
-        // Filter out any null results from errors
-        return result.filter(item => item !== null) as Conversation[];
+        // Filter out any null results from errors and sort by last message time (most recent first)
+        return result
+          .filter(item => item !== null) as Conversation[];
       } catch (error) {
         console.error("Error in useConversationsList:", error);
         return [];
       }
     },
     {
-      staleTime: 5000,
+      staleTime: 5000, // Lower stale time to refresh more often
       gcTime: 30000,
       retry: 1,
     }

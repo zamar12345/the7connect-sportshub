@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { Message } from "@/types/supabase";
+import { Message } from "@/types/messages";
 
 export function useRealtimeMessages(conversationId: string) {
   const queryClient = useQueryClient();
@@ -17,7 +17,7 @@ export function useRealtimeMessages(conversationId: string) {
       return data.user?.id;
     };
 
-    // Create a more specific channel name
+    // Create a more specific channel name to avoid conflicts
     const channelName = `conversation:${conversationId}`;
     
     const channel = supabase
@@ -74,6 +74,7 @@ export function useRealtimeMessages(conversationId: string) {
 
   const markMessageAsRead = async (conversationId: string) => {
     try {
+      // Directly use rpc to mark messages as read
       const { error } = await supabase.rpc('mark_messages_as_read', {
         conversation_id_param: conversationId
       });

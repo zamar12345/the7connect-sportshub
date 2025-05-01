@@ -1,3 +1,4 @@
+
 import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -19,14 +20,14 @@ const ConversationView = ({ conversation, currentUserId, onBack }: ConversationV
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
+  // Set up real-time messaging and mark-as-read functionality first
+  const { isSubscribed, markMessageAsRead } = useRealtimeMessages(conversation.id);
+  
   // Fetch messages with React Query and real-time updates
   const { 
     data: messages = [],
     isLoading
-  } = useMessageQuery(conversation.id);
-  
-  // Set up real-time messaging and mark-as-read functionality
-  const { markMessageAsRead } = useRealtimeMessages(conversation.id);
+  } = useMessageQuery(conversation.id, isSubscribed);
   
   // Send message mutation
   const sendMessageMutation = useSendMessage(conversation.id, currentUserId);
@@ -51,21 +52,16 @@ const ConversationView = ({ conversation, currentUserId, onBack }: ConversationV
     const messageText = newMessage.trim();
     setNewMessage("");
     
-    // Optimistically update UI by manually adding the pending message
-    const optimisticMessage = {
-      id: `temp-${Date.now()}`,
-      content: messageText,
-      sender_id: currentUserId,
-      created_at: new Date().toISOString(),
-      is_read: false,
-      conversation_id: conversation.id
-    };
-    
-    // Send to server in background
-    sendMessageMutation.mutate(messageText);
-    
-    // Scroll to bottom immediately
-    setTimeout(scrollToBottom, 50);
+    try {
+      // Send to server
+      sendMessageMutation.mutate(messageText);
+      
+      // Scroll to bottom immediately
+      setTimeout(scrollToBottom, 50);
+    } catch (error) {
+      console.error("Error sending message:", error);
+      // The error toast is handled in the mutation
+    }
   };
 
   return (
@@ -135,10 +131,10 @@ const ConversationView = ({ conversation, currentUserId, onBack }: ConversationV
           <Button 
             type="submit" 
             className="self-end"
-            disabled={!newMessage.trim()}
+            disabled={!newMessage.trim() || sendMessageMutation.isPending}
           >
             <Send size={18} className="mr-2" /> 
-            Send
+            {sendMessageMutation.isPending ? "Sending..." : "Send"}
           </Button>
         </form>
       </div>
