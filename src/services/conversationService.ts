@@ -97,6 +97,10 @@ export const findOrCreateConversation = async (otherUserId: string): Promise<str
     // Find which of current user's conversations also have the other user
     const currentUserConversationIds = currentUserConversations.map(c => c.conversation_id);
     
+    if (currentUserConversationIds.length === 0) {
+      return createConversation(otherUserId);
+    }
+    
     const { data: sharedConversations, error: sharedError } = await supabase
       .from('conversation_participants')
       .select('conversation_id')
