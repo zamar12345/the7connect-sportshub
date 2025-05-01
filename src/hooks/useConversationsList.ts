@@ -37,22 +37,22 @@ export function useConversationsList() {
         // Get the conversation IDs
         const conversationIds = participations.map(p => p.conversation_id);
         
-        // Process each conversation separately to avoid complex joins
-        const conversations = await Promise.all(conversationIds.map(async (convId) => {
+        // Fetch conversations data in batches
+        const conversationsPromises = conversationIds.map(async (convId) => {
           try {
-            // Get the conversation details
+            // 1. Get the basic conversation data
             const { data: conversation, error: convError } = await supabase
               .from('conversations')
-              .select('*, id, last_message, last_message_at')
+              .select('*')
               .eq('id', convId)
               .single();
               
             if (convError || !conversation) {
-              console.error("Error fetching conversation:", convError);
+              console.error(`Error fetching conversation ${convId}:`, convError);
               return null;
             }
             
-            // Find the other participant
+            // 2. Find the other participants separately
             const { data: participants, error: partError } = await supabase
               .from('conversation_participants')
               .select(`
@@ -68,14 +68,14 @@ export function useConversationsList() {
               .neq('user_id', currentUserId);
               
             if (partError || !participants || participants.length === 0) {
-              console.error("Error fetching participants:", partError);
+              console.error(`Error fetching participants for ${convId}:`, partError);
               return null;
             }
             
-            // Get the other user's info
+            // 3. Get the other user's info
             const otherUser = participants[0].users;
             
-            // Count unread messages
+            // 4. Count unread messages
             const { count, error: countError } = await supabase
               .from('direct_messages')
               .select('id', { count: 'exact', head: true })
@@ -84,11 +84,11 @@ export function useConversationsList() {
               .neq('sender_id', currentUserId);
               
             if (countError) {
-              console.error("Error counting unread messages:", countError);
+              console.error(`Error counting unread messages for ${convId}:`, countError);
               return null;
             }
             
-            // Build the conversation object
+            // 5. Build the conversation object
             return {
               id: conversation.id,
               user: {
@@ -107,7 +107,10 @@ export function useConversationsList() {
             console.error("Error processing conversation:", error);
             return null;
           }
-        }));
+        });
+        
+        // Wait for all conversation processing to complete
+        const conversations = await Promise.all(conversationsPromises);
         
         // Filter out any null results and return valid conversations
         return conversations.filter(Boolean) as Conversation[];

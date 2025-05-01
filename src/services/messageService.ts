@@ -2,64 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ConversationParticipant } from "@/types/messages";
-
-// Create a new conversation between two users
-export const createConversation = async (otherUserId: string): Promise<string | null> => {
-  try {
-    const currentUser = (await supabase.auth.getSession()).data.session?.user;
-    
-    if (!currentUser) {
-      toast.error("You must be logged in to start a conversation");
-      return null;
-    }
-
-    // First create the conversation record
-    const { data: conversation, error: conversationError } = await supabase
-      .from('conversations')
-      .insert({})
-      .select('id')
-      .single();
-      
-    if (conversationError) {
-      console.error("Error creating conversation:", conversationError);
-      throw conversationError;
-    }
-    
-    const conversationId = conversation.id;
-    
-    // Add current user as participant
-    const { error: currentUserError } = await supabase
-      .from('conversation_participants')
-      .insert({
-        conversation_id: conversationId,
-        user_id: currentUser.id
-      });
-      
-    if (currentUserError) {
-      console.error("Error adding current user to conversation:", currentUserError);
-      throw currentUserError;
-    }
-    
-    // Add other user as participant
-    const { error: otherUserError } = await supabase
-      .from('conversation_participants')
-      .insert({
-        conversation_id: conversationId,
-        user_id: otherUserId
-      });
-      
-    if (otherUserError) {
-      console.error("Error adding other user to conversation:", otherUserError);
-      throw otherUserError;
-    }
-    
-    return conversationId;
-  } catch (error: any) {
-    console.error("Error in createConversation:", error);
-    toast.error(`Failed to start conversation: ${error.message}`);
-    return null;
-  }
-};
+import { findOrCreateConversation } from "./conversationService";
 
 // Get conversation participants
 export const getConversationParticipants = async (conversationId: string): Promise<ConversationParticipant[]> => {
@@ -93,43 +36,5 @@ export const getConversationParticipants = async (conversationId: string): Promi
 
 // Start a conversation with a user from their profile
 export const startConversationFromProfile = async (userId: string): Promise<string | null> => {
-  try {
-    // Check if user is authenticated
-    const currentUserSession = await supabase.auth.getSession();
-    const currentUserId = currentUserSession.data.session?.user.id;
-    
-    if (!currentUserId) {
-      toast.error("You must be logged in to start a conversation");
-      return null;
-    }
-
-    // First check if a conversation already exists
-    const { data: myConversations } = await supabase
-      .from('conversation_participants')
-      .select('conversation_id')
-      .eq('user_id', currentUserId);
-      
-    if (myConversations && myConversations.length > 0) {
-      const conversationIds = myConversations.map(p => p.conversation_id);
-      
-      // Find conversations where the other user also participates
-      const { data: sharedConversations } = await supabase
-        .from('conversation_participants')
-        .select('conversation_id')
-        .eq('user_id', userId)
-        .in('conversation_id', conversationIds);
-        
-      if (sharedConversations && sharedConversations.length > 0) {
-        // Return the first matching conversation ID
-        return sharedConversations[0].conversation_id;
-      }
-    }
-    
-    // If no existing conversation found, create a new one
-    return await createConversation(userId);
-  } catch (error: any) {
-    console.error("Error starting conversation:", error);
-    toast.error(`Could not start conversation: ${error.message}`);
-    return null;
-  }
+  return findOrCreateConversation(userId);
 };

@@ -43,7 +43,8 @@ export const createConversation = async (otherUserId: string): Promise<string | 
       throw currentUserError;
     }
     
-    // Add other user as a participant directly (needs to be done by an admin or service role in production)
+    // For adding the other user, we need to use service role in production
+    // For now, we'll directly insert but in production this should be done via a secure function
     const { error: otherUserError } = await supabase
       .from('conversation_participants')
       .insert({
@@ -78,21 +79,32 @@ export const findOrCreateConversation = async (otherUserId: string): Promise<str
       return null;
     }
     
-    // Simplified approach: manually find conversations where both users participate
-    const { data: userConversations } = await supabase
+    // First get all conversation IDs where the current user is a participant
+    const { data: userConversations, error: userConvError } = await supabase
       .from('conversation_participants')
       .select('conversation_id')
       .eq('user_id', currentUser.id);
       
+    if (userConvError) {
+      console.error("Error fetching user conversations:", userConvError);
+      throw userConvError;
+    }
+    
     if (userConversations && userConversations.length > 0) {
       const conversationIds = userConversations.map(p => p.conversation_id);
       
-      const { data: matchingConversations } = await supabase
+      // Now find which of these conversations the other user participates in
+      const { data: matchingConversations, error: matchingError } = await supabase
         .from('conversation_participants')
         .select('conversation_id')
         .eq('user_id', otherUserId)
         .in('conversation_id', conversationIds);
         
+      if (matchingError) {
+        console.error("Error finding matching conversations:", matchingError);
+        throw matchingError;
+      }
+      
       if (matchingConversations && matchingConversations.length > 0) {
         // Return the first matching conversation ID
         return matchingConversations[0].conversation_id;
