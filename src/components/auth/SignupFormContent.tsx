@@ -49,17 +49,17 @@ export const SignupFormContent = () => {
         return;
       }
 
-      // Create a simple flat object with primitive values only
+      // Create a properly formatted metadata object with only string values
       const metadata = {
         first_name: values.firstName.trim(),
         last_name: values.lastName.trim(),
         full_name: fullName,
-        username: username.trim()
+        username: username
       };
       
-      console.log("🚨 Metadata being sent to Supabase:", metadata);
+      console.log("Metadata being sent to Supabase:", metadata);
 
-      // Create the user in the auth system with metadata
+      // Sign up the user
       const { data, error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
