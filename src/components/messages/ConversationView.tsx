@@ -2,13 +2,14 @@
 import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft, Send, RefreshCw } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import DonateButton from "@/components/DonateButton";
 import { Conversation } from "@/types/messages";
 import MessageBubble from "./MessageBubble";
 import { useMessageQuery, useSendMessage } from "@/hooks/useMessages";
 import { useRealtimeMessages } from "@/hooks/useMessages"; 
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 type ConversationViewProps = {
   conversation: Conversation;
@@ -26,7 +27,8 @@ const ConversationView = ({ conversation, currentUserId, onBack }: ConversationV
   // Fetch messages with React Query and real-time updates
   const { 
     data: messages = [],
-    isLoading
+    isLoading,
+    refetch
   } = useMessageQuery(conversation.id, isSubscribed);
   
   // Send message mutation
@@ -66,6 +68,15 @@ const ConversationView = ({ conversation, currentUserId, onBack }: ConversationV
     }
   };
 
+  const handleRetryConnection = () => {
+    // Force refetch messages
+    refetch();
+    // Refresh the page as a last resort if WebSocket connection is persistently failing
+    if (!isSubscribed) {
+      window.location.reload();
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div className="border-b border-border p-4 flex items-center">
@@ -82,6 +93,7 @@ const ConversationView = ({ conversation, currentUserId, onBack }: ConversationV
               <h3 className="font-medium text-base">{conversation.user.name}</h3>
               <p className="text-xs text-muted-foreground">
                 {conversation.user.username ? `@${conversation.user.username}` : 'Online'}
+                {!isSubscribed && ' (offline)'}
               </p>
             </div>
             <DonateButton
@@ -91,6 +103,22 @@ const ConversationView = ({ conversation, currentUserId, onBack }: ConversationV
           </div>
         </div>
       </div>
+      
+      {!isSubscribed && (
+        <Alert variant="destructive" className="m-2 py-2">
+          <AlertDescription className="flex items-center justify-between">
+            <span>Connection issue. Real-time updates paused.</span>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="ml-2" 
+              onClick={handleRetryConnection}
+            >
+              <RefreshCw size={14} className="mr-1" /> Retry
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
       
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {isLoading ? (
