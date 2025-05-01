@@ -27,16 +27,29 @@ export const createConversation = async (otherUserId: string): Promise<string | 
     
     const conversationId = conversation.id;
     
-    // Add both participants in a single transaction to prevent issues with RLS policies
-    const { error: participantsError } = await supabase.rpc('add_conversation_participants', {
-      conversation_id_param: conversationId,
-      current_user_id_param: currentUser.id,
-      other_user_id_param: otherUserId
-    });
+    // Add both participants using separate insert statements instead of RPC
+    const { error: currentUserError } = await supabase
+      .from('conversation_participants')
+      .insert({
+        conversation_id: conversationId,
+        user_id: currentUser.id
+      });
       
-    if (participantsError) {
-      console.error("Error adding participants to conversation:", participantsError);
-      throw participantsError;
+    if (currentUserError) {
+      console.error("Error adding current user to conversation:", currentUserError);
+      throw currentUserError;
+    }
+    
+    const { error: otherUserError } = await supabase
+      .from('conversation_participants')
+      .insert({
+        conversation_id: conversationId,
+        user_id: otherUserId
+      });
+      
+    if (otherUserError) {
+      console.error("Error adding other user to conversation:", otherUserError);
+      throw otherUserError;
     }
     
     return conversationId;
@@ -89,20 +102,27 @@ export const startConversationFromProfile = async (userId: string): Promise<stri
       return null;
     }
 
-    // Use a more reliable approach to find existing conversations
-    const { data: existingConversation, error } = await supabase.rpc('find_conversation_between_users', {
-      user_one: currentUserId,
-      user_two: userId
-    });
-    
-    if (error) {
-      console.error("Error checking existing conversations:", error);
-      throw error;
-    }
-    
-    // If an existing conversation was found, return its ID
-    if (existingConversation) {
-      return existingConversation;
+    // Find existing conversation directly using a query instead of RPC
+    const { data: existingParticipations } = await supabase
+      .from('conversation_participants')
+      .select('conversation_id')
+      .eq('user_id', currentUserId);
+      
+    if (existingParticipations && existingParticipations.length > 0) {
+      // Get all conversations where current user participates
+      const currentUserConversations = existingParticipations.map(p => p.conversation_id);
+      
+      // Find conversations where the other user also participates
+      const { data: otherUserParticipations } = await supabase
+        .from('conversation_participants')
+        .select('conversation_id')
+        .eq('user_id', userId)
+        .in('conversation_id', currentUserConversations);
+        
+      // If there's a match, return the first conversation ID
+      if (otherUserParticipations && otherUserParticipations.length > 0) {
+        return otherUserParticipations[0].conversation_id;
+      }
     }
     
     // If no existing conversation found, create a new one
