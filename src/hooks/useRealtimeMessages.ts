@@ -20,6 +20,8 @@ export function useRealtimeMessages(conversationId: string) {
     // Create a more specific channel name to avoid conflicts
     const channelName = `conversation:${conversationId}`;
     
+    console.log(`Subscribing to realtime updates for conversation: ${conversationId}`);
+    
     const channel = supabase
       .channel(channelName)
       .on('postgres_changes', 
@@ -31,6 +33,8 @@ export function useRealtimeMessages(conversationId: string) {
         }, 
         async (payload) => {
           try {
+            console.log("Realtime message received:", payload);
+            
             // Update messages cache
             const newMessage = payload.new as Message;
             
@@ -74,6 +78,8 @@ export function useRealtimeMessages(conversationId: string) {
 
   const markMessageAsRead = async (conversationId: string) => {
     try {
+      console.log("Marking messages as read for conversation:", conversationId);
+      
       // Directly use rpc to mark messages as read
       const { error } = await supabase.rpc('mark_messages_as_read', {
         conversation_id_param: conversationId

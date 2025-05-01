@@ -53,6 +53,8 @@ const ConversationView = ({ conversation, currentUserId, onBack }: ConversationV
     setNewMessage("");
     
     try {
+      console.log(`Sending message in conversation ${conversation.id}: ${messageText}`);
+      
       // Send to server
       sendMessageMutation.mutate(messageText);
       

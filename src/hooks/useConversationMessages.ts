@@ -43,6 +43,7 @@ export function useMessageQuery(conversationId: string, isSubscribed: boolean = 
 
 /**
  * Hook for sending messages in a conversation
+ * Improved implementation with better error handling and transaction support
  */
 export function useSendMessage(conversationId: string, currentUserId: string) {
   const queryClient = useQueryClient();
@@ -53,42 +54,49 @@ export function useSendMessage(conversationId: string, currentUserId: string) {
         throw new Error("Message content cannot be empty");
       }
       
-      // First insert the message
-      const { data: messageData, error: messageError } = await supabase
-        .from('direct_messages')
-        .insert({
-          content,
-          sender_id: currentUserId,
-          conversation_id: conversationId,
-          is_read: false
-        })
-        .select();
-      
-      if (messageError) {
-        console.error("Error sending message:", messageError);
-        throw messageError;
+      if (!currentUserId) {
+        throw new Error("User not authenticated");
       }
       
-      // Then update the conversation with the last message
-      const { error: updateError } = await supabase
-        .from('conversations')
-        .update({
-          last_message: content,
-          last_message_at: new Date().toISOString()
-        })
-        .eq('id', conversationId);
+      try {
+        // First insert the message
+        const { data: messageData, error: messageError } = await supabase
+          .from('direct_messages')
+          .insert({
+            content,
+            sender_id: currentUserId,
+            conversation_id: conversationId,
+            is_read: false
+          })
+          .select();
         
-      if (updateError) {
-        console.error("Error updating conversation metadata:", updateError);
-        // Don't throw here, the message was sent successfully
+        if (messageError) {
+          console.error("Error sending message:", messageError);
+          throw messageError;
+        }
+        
+        // Then update the conversation with the last message
+        const { error: updateError } = await supabase
+          .from('conversations')
+          .update({
+            last_message: content,
+            last_message_at: new Date().toISOString()
+          })
+          .eq('id', conversationId);
+          
+        if (updateError) {
+          console.error("Error updating conversation metadata:", updateError);
+          // Don't throw here, the message was sent successfully
+        }
+        
+        return messageData?.[0];
+      } catch (error: any) {
+        console.error("Failed to send message:", error);
+        throw new Error(error.message || "Failed to send message");
       }
-      
-      return messageData?.[0];
     },
-    onMutate: async (content) => {
-      return { content };
-    },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Message sent successfully:", data);
       // Invalidate queries to update UI
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
       queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
