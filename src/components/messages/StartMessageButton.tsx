@@ -23,14 +23,15 @@ const StartMessageButton = ({ userId, username, className = "" }: StartMessageBu
       setIsLoading(true);
       
       // Get the conversation ID first
-      const conversationId = await startConversationFromProfile(userId, username);
+      const conversationId = await startConversationFromProfile(userId);
       
       if (conversationId) {
+        toast.success(`Started conversation with ${username || 'user'}`);
         // If we got a conversation ID, navigate to the messages page with that ID
         navigate(`/messages?conversation=${conversationId}`);
       } else {
         // Failed to get conversation ID but no error was thrown
-        console.log("No conversation ID returned but no error was thrown");
+        console.error("No conversation ID returned but no error was thrown");
         navigate('/messages'); // Navigate to messages anyway
       }
     } catch (error: any) {
