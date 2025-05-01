@@ -49,7 +49,7 @@ export const SignupFormContent = () => {
         return;
       }
 
-      // Create a simple flat object with primitive values only - no nested objects or arrays
+      // Create a simple flat object with primitive values only
       const metadata = {
         first_name: values.firstName.trim(),
         last_name: values.lastName.trim(),
