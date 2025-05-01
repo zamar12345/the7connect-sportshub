@@ -1,1 +1,5 @@
+
 project_id = "hfaxdbekxjbqbhierwaj"
+
+[functions.smart-action]
+verify_jwt = false
