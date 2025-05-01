@@ -78,20 +78,39 @@ export const findOrCreateConversation = async (otherUserId: string): Promise<str
       return null;
     }
     
-    // First, let's create a function to get shared conversations between users
-    const { data: sharedConversations, error } = await supabase.rpc('get_shared_conversations', { 
-      user_id_one: currentUser.id, 
-      user_id_two: otherUserId 
-    });
+    // Find all conversations for current user
+    const { data: currentUserConversations, error: currentUserError } = await supabase
+      .from('conversation_participants')
+      .select('conversation_id')
+      .eq('user_id', currentUser.id);
+      
+    if (currentUserError) {
+      console.error("Error finding current user conversations:", currentUserError);
+      throw currentUserError;
+    }
     
-    if (error) {
-      console.error("Error finding shared conversations:", error);
-      throw error;
+    if (!currentUserConversations || currentUserConversations.length === 0) {
+      // No existing conversations, create a new one
+      return createConversation(otherUserId);
+    }
+    
+    // Find which of current user's conversations also have the other user
+    const currentUserConversationIds = currentUserConversations.map(c => c.conversation_id);
+    
+    const { data: sharedConversations, error: sharedError } = await supabase
+      .from('conversation_participants')
+      .select('conversation_id')
+      .eq('user_id', otherUserId)
+      .in('conversation_id', currentUserConversationIds);
+      
+    if (sharedError) {
+      console.error("Error finding shared conversations:", sharedError);
+      throw sharedError;
     }
     
     // If a shared conversation exists, return its ID
     if (sharedConversations && sharedConversations.length > 0) {
-      return sharedConversations[0];
+      return sharedConversations[0].conversation_id;
     }
     
     // No existing conversation found, create a new one
