@@ -7,26 +7,24 @@ import { findOrCreateConversation } from "./conversationService";
 // Get conversation participants
 export const getConversationParticipants = async (conversationId: string): Promise<ConversationParticipant[]> => {
   try {
+    // Using a direct join with users table to avoid recursive policy issues
     const { data, error } = await supabase
-      .from('conversation_participants')
+      .from('users')
       .select(`
-        user_id,
-        users:user_id (
-          id,
-          full_name,
-          avatar_url,
-          username
-        )
+        id,
+        full_name,
+        avatar_url,
+        username
       `)
-      .eq('conversation_id', conversationId);
+      .in('id', supabase.rpc('get_conversation_participant_ids', { conversation_uuid: conversationId }));
       
     if (error) throw error;
     
-    return data.map((item: any) => ({
-      id: item.users.id,
-      full_name: item.users.full_name,
-      avatar_url: item.users.avatar_url,
-      username: item.users.username
+    return data.map((user: any) => ({
+      id: user.id,
+      full_name: user.full_name,
+      avatar_url: user.avatar_url,
+      username: user.username
     }));
   } catch (error: any) {
     console.error("Error fetching conversation participants:", error);

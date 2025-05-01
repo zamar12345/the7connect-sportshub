@@ -16,7 +16,7 @@ export const createConversation = async (otherUserId: string): Promise<string | 
       return null;
     }
 
-    // First create the conversation record without any participants
+    // First create the conversation record
     const { data: conversation, error: conversationError } = await supabase
       .from('conversations')
       .insert({})
@@ -30,7 +30,7 @@ export const createConversation = async (otherUserId: string): Promise<string | 
     
     const conversationId = conversation.id;
     
-    // Add current user as a participant directly
+    // Add current user as a participant
     const { error: currentUserError } = await supabase
       .from('conversation_participants')
       .insert({
@@ -43,8 +43,7 @@ export const createConversation = async (otherUserId: string): Promise<string | 
       throw currentUserError;
     }
     
-    // For adding the other user, we need to use service role in production
-    // For now, we'll directly insert but in production this should be done via a secure function
+    // Add the other user as a participant
     const { error: otherUserError } = await supabase
       .from('conversation_participants')
       .insert({
@@ -79,36 +78,20 @@ export const findOrCreateConversation = async (otherUserId: string): Promise<str
       return null;
     }
     
-    // First get all conversation IDs where the current user is a participant
-    const { data: userConversations, error: userConvError } = await supabase
-      .from('conversation_participants')
-      .select('conversation_id')
-      .eq('user_id', currentUser.id);
-      
-    if (userConvError) {
-      console.error("Error fetching user conversations:", userConvError);
-      throw userConvError;
+    // First, let's create a function to get shared conversations between users
+    const { data: sharedConversations, error } = await supabase.rpc('get_shared_conversations', { 
+      user_id_one: currentUser.id, 
+      user_id_two: otherUserId 
+    });
+    
+    if (error) {
+      console.error("Error finding shared conversations:", error);
+      throw error;
     }
     
-    if (userConversations && userConversations.length > 0) {
-      const conversationIds = userConversations.map(p => p.conversation_id);
-      
-      // Now find which of these conversations the other user participates in
-      const { data: matchingConversations, error: matchingError } = await supabase
-        .from('conversation_participants')
-        .select('conversation_id')
-        .eq('user_id', otherUserId)
-        .in('conversation_id', conversationIds);
-        
-      if (matchingError) {
-        console.error("Error finding matching conversations:", matchingError);
-        throw matchingError;
-      }
-      
-      if (matchingConversations && matchingConversations.length > 0) {
-        // Return the first matching conversation ID
-        return matchingConversations[0].conversation_id;
-      }
+    // If a shared conversation exists, return its ID
+    if (sharedConversations && sharedConversations.length > 0) {
+      return sharedConversations[0];
     }
     
     // No existing conversation found, create a new one

@@ -19,26 +19,22 @@ export function useConversationsList() {
           throw new Error("User not authenticated");
         }
         
-        // First get all conversation IDs where the current user is a participant
-        const { data: participations, error: participationsError } = await supabase
-          .from('conversation_participants')
-          .select('conversation_id')
-          .eq('user_id', currentUserId);
+        // Use a custom function to fetch conversations without recursion issues
+        const { data: conversationIds, error: idsError } = await supabase.rpc('get_user_conversation_ids', { 
+          user_id_param: currentUserId 
+        });
           
-        if (participationsError) {
-          console.error("Error fetching conversations:", participationsError);
-          throw participationsError;
+        if (idsError) {
+          console.error("Error fetching conversation IDs:", idsError);
+          throw idsError;
         }
         
-        if (!participations || participations.length === 0) {
+        if (!conversationIds || conversationIds.length === 0) {
           return [];
         }
         
-        // Get the conversation IDs
-        const conversationIds = participations.map(p => p.conversation_id);
-        
-        // Fetch conversations data in batches
-        const conversationsPromises = conversationIds.map(async (convId) => {
+        // Fetch conversations data
+        const conversationsPromises = conversationIds.map(async (convId: string) => {
           try {
             // 1. Get the basic conversation data
             const { data: conversation, error: convError } = await supabase
@@ -52,28 +48,23 @@ export function useConversationsList() {
               return null;
             }
             
-            // 2. Find the other participants separately
-            const { data: participants, error: partError } = await supabase
-              .from('conversation_participants')
-              .select(`
-                user_id,
-                users:user_id (
-                  id,
-                  full_name,
-                  avatar_url,
-                  username
-                )
-              `)
-              .eq('conversation_id', convId)
-              .neq('user_id', currentUserId);
+            // 2. Get the other participants
+            const { data: otherUsers, error: usersError } = await supabase
+              .from('users')
+              .select('id, full_name, avatar_url, username')
+              .in('id', supabase.rpc('get_conversation_other_participants', { 
+                conversation_uuid: convId,
+                current_user_id: currentUserId
+              }))
+              .limit(1);
               
-            if (partError || !participants || participants.length === 0) {
-              console.error(`Error fetching participants for ${convId}:`, partError);
+            if (usersError || !otherUsers || otherUsers.length === 0) {
+              console.error(`Error fetching other participants for ${convId}:`, usersError);
               return null;
             }
             
             // 3. Get the other user's info
-            const otherUser = participants[0].users;
+            const otherUser = otherUsers[0];
             
             // 4. Count unread messages
             const { count, error: countError } = await supabase

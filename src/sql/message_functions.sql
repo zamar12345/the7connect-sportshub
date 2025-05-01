@@ -1,46 +1,64 @@
 
--- Function to add participants to a conversation
-CREATE OR REPLACE FUNCTION public.add_conversation_participants(
-  conversation_id_param UUID,
-  current_user_id_param UUID,
-  other_user_id_param UUID
-)
-RETURNS void
+-- Function to get conversation participant IDs without recursion
+CREATE OR REPLACE FUNCTION public.get_conversation_participant_ids(conversation_uuid UUID)
+RETURNS SETOF UUID
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
 AS $$
 BEGIN
-  -- Add current user as participant
-  INSERT INTO public.conversation_participants (conversation_id, user_id)
-  VALUES (conversation_id_param, current_user_id_param);
-  
-  -- Add other user as participant
-  INSERT INTO public.conversation_participants (conversation_id, user_id)
-  VALUES (conversation_id_param, other_user_id_param);
+  RETURN QUERY
+  SELECT user_id
+  FROM public.conversation_participants
+  WHERE conversation_id = conversation_uuid;
 END;
 $$;
 
--- Function to find conversation between two users
-CREATE OR REPLACE FUNCTION public.find_conversation_between_users(
-  user_one UUID,
-  user_two UUID
-)
-RETURNS UUID
+-- Function to get conversations shared between two users
+CREATE OR REPLACE FUNCTION public.get_shared_conversations(user_id_one UUID, user_id_two UUID)
+RETURNS SETOF UUID
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
 AS $$
-DECLARE
-  found_conversation_id UUID;
 BEGIN
-  -- Find conversations that both users participate in
-  SELECT c1.conversation_id INTO found_conversation_id
-  FROM public.conversation_participants c1
-  JOIN public.conversation_participants c2 ON c1.conversation_id = c2.conversation_id
-  WHERE c1.user_id = user_one AND c2.user_id = user_two
-  LIMIT 1;
-  
-  RETURN found_conversation_id;
+  RETURN QUERY
+  SELECT cp1.conversation_id
+  FROM public.conversation_participants cp1
+  JOIN public.conversation_participants cp2 
+    ON cp1.conversation_id = cp2.conversation_id
+  WHERE cp1.user_id = user_id_one
+    AND cp2.user_id = user_id_two;
+END;
+$$;
+
+-- Function to get all conversation IDs for a user
+CREATE OR REPLACE FUNCTION public.get_user_conversation_ids(user_id_param UUID)
+RETURNS SETOF UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT conversation_id
+  FROM public.conversation_participants
+  WHERE user_id = user_id_param;
+END;
+$$;
+
+-- Function to get other participants in a conversation (excluding current user)
+CREATE OR REPLACE FUNCTION public.get_conversation_other_participants(conversation_uuid UUID, current_user_id UUID)
+RETURNS SETOF UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT user_id
+  FROM public.conversation_participants
+  WHERE conversation_id = conversation_uuid
+    AND user_id != current_user_id;
 END;
 $$;
