@@ -18,6 +18,37 @@ export const VALID_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'imag
 export const VALID_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
 
 /**
+ * Create storage bucket if it doesn't exist
+ */
+export const ensureBucketExists = async (bucketId: string): Promise<boolean> => {
+  try {
+    // Check if bucket exists
+    const { data: buckets } = await supabase.storage.listBuckets();
+    if (buckets?.find(b => b.name === bucketId)) {
+      console.log(`Bucket ${bucketId} already exists`);
+      return true;
+    }
+
+    // Bucket doesn't exist, create it
+    console.log(`Creating ${bucketId} bucket`);
+    const { error } = await supabase.storage.createBucket(bucketId, {
+      public: true,
+      fileSizeLimit: 52428800 // 50MB
+    });
+
+    if (error) {
+      console.error(`Error creating bucket ${bucketId}:`, error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error(`Error ensuring bucket ${bucketId} exists:`, error);
+    return false;
+  }
+};
+
+/**
  * Upload media (image or video) to Supabase Storage
  */
 export const uploadMedia = async ({ file, userId, onProgress }: UploadMediaOptions): Promise<string | null> => {
@@ -50,13 +81,9 @@ export const uploadMedia = async ({ file, userId, onProgress }: UploadMediaOptio
     }
     
     // Make sure the post-media bucket exists
-    const { data: buckets } = await supabase.storage.listBuckets();
-    if (!buckets?.find(b => b.name === 'post-media')) {
-      console.log("Creating post-media bucket");
-      await supabase.storage.createBucket('post-media', {
-        public: true,
-        fileSizeLimit: 52428800 // 50MB
-      });
+    const bucketExists = await ensureBucketExists('post-media');
+    if (!bucketExists) {
+      throw new Error('Failed to create storage bucket. Please try again later.');
     }
     
     // Upload to Supabase Storage
