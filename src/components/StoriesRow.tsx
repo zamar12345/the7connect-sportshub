@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from "react";
 import { Plus, ChevronRight, ChevronLeft } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -6,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/auth/AuthProvider";
 import CreateStoryDialog from "./CreateStoryDialog";
 import { fetchStories, Story } from "@/services/storyService";
+import StoryViewer from "./StoryViewer";
 
 const StoriesRow = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -13,6 +13,8 @@ const StoriesRow = () => {
   const [createStoryOpen, setCreateStoryOpen] = useState(false);
   const [stories, setStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeStory, setActiveStory] = useState<Story | null>(null);
+  const [showStoryViewer, setShowStoryViewer] = useState(false);
 
   useEffect(() => {
     const loadStories = async () => {
@@ -51,6 +53,11 @@ const StoriesRow = () => {
     }
   };
 
+  const handleViewStory = (story: Story) => {
+    setActiveStory(story);
+    setShowStoryViewer(true);
+  };
+
   return (
     <div className="relative pb-2 mb-1">
       <div className="flex items-center mb-2 px-4">
@@ -86,7 +93,11 @@ const StoriesRow = () => {
             </div>
           ) : stories.length > 0 ? (
             stories.map((story) => (
-              <div key={story.id} className="flex-shrink-0 flex flex-col items-center">
+              <div 
+                key={story.id} 
+                className="flex-shrink-0 flex flex-col items-center cursor-pointer"
+                onClick={() => handleViewStory(story)}
+              >
                 <div className={`w-16 h-16 rounded-full p-[2px] ${story.viewed ? 'bg-muted' : 'sports-gradient'}`}>
                   <div className="rounded-full bg-background p-[2px] w-full h-full">
                     <Avatar className="w-full h-full">
@@ -132,6 +143,28 @@ const StoriesRow = () => {
         onOpenChange={setCreateStoryOpen} 
         onSuccess={handleStoryCreated}
       />
+
+      {/* Story Viewer (will be implemented in StoryViewer.tsx) */}
+      {showStoryViewer && activeStory && (
+        <StoryViewer 
+          story={activeStory}
+          onClose={() => setShowStoryViewer(false)}
+          onNext={() => {
+            const currentIndex = stories.findIndex(s => s.id === activeStory.id);
+            if (currentIndex < stories.length - 1) {
+              setActiveStory(stories[currentIndex + 1]);
+            } else {
+              setShowStoryViewer(false);
+            }
+          }}
+          onPrevious={() => {
+            const currentIndex = stories.findIndex(s => s.id === activeStory.id);
+            if (currentIndex > 0) {
+              setActiveStory(stories[currentIndex - 1]);
+            }
+          }}
+        />
+      )}
     </div>
   );
 };
