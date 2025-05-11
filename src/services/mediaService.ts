@@ -18,32 +18,28 @@ export const VALID_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'imag
 export const VALID_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
 
 /**
- * Create storage bucket if it doesn't exist
+ * Check if a bucket exists rather than creating it
  */
-export const ensureBucketExists = async (bucketId: string): Promise<boolean> => {
+export const checkBucketExists = async (bucketId: string): Promise<boolean> => {
   try {
     // Check if bucket exists
-    const { data: buckets } = await supabase.storage.listBuckets();
-    if (buckets?.find(b => b.name === bucketId)) {
-      console.log(`Bucket ${bucketId} already exists`);
-      return true;
-    }
-
-    // Bucket doesn't exist, create it
-    console.log(`Creating ${bucketId} bucket`);
-    const { error } = await supabase.storage.createBucket(bucketId, {
-      public: true,
-      fileSizeLimit: 52428800 // 50MB
-    });
-
+    const { data: buckets, error } = await supabase.storage.listBuckets();
+    
     if (error) {
-      console.error(`Error creating bucket ${bucketId}:`, error);
+      console.error(`Error checking if bucket ${bucketId} exists:`, error);
       return false;
     }
-
-    return true;
+    
+    const bucketExists = buckets?.find(b => b.name === bucketId);
+    if (bucketExists) {
+      console.log(`Bucket ${bucketId} exists`);
+      return true;
+    }
+    
+    console.log(`Bucket ${bucketId} does not exist`);
+    return false;
   } catch (error) {
-    console.error(`Error ensuring bucket ${bucketId} exists:`, error);
+    console.error(`Error checking if bucket ${bucketId} exists:`, error);
     return false;
   }
 };
@@ -80,10 +76,10 @@ export const uploadMedia = async ({ file, userId, onProgress }: UploadMediaOptio
       onProgress(10);
     }
     
-    // Make sure the post-media bucket exists
-    const bucketExists = await ensureBucketExists('post-media');
+    // Check if the post-media bucket exists
+    const bucketExists = await checkBucketExists('post-media');
     if (!bucketExists) {
-      throw new Error('Failed to create storage bucket. Please try again later.');
+      throw new Error('Media storage bucket not available. Please contact support.');
     }
     
     // Upload to Supabase Storage
