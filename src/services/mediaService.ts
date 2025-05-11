@@ -18,27 +18,6 @@ export const VALID_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'imag
 export const VALID_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
 
 /**
- * Check if a bucket exists without trying to create it
- */
-export const checkBucketExists = async (bucketId: string): Promise<boolean> => {
-  try {
-    // Try to get bucket details directly (simpler approach)
-    const { error } = await supabase.storage.getBucket(bucketId);
-    
-    if (error) {
-      console.error(`Error checking bucket ${bucketId}:`, error);
-      return false;
-    }
-    
-    console.log(`Bucket ${bucketId} exists and is accessible`);
-    return true;
-  } catch (error) {
-    console.error(`Error checking if bucket ${bucketId} exists:`, error);
-    return false;
-  }
-};
-
-/**
  * Upload media (image or video) to Supabase Storage
  */
 export const uploadMedia = async ({ file, userId, onProgress }: UploadMediaOptions): Promise<string | null> => {
@@ -70,10 +49,7 @@ export const uploadMedia = async ({ file, userId, onProgress }: UploadMediaOptio
       onProgress(10);
     }
     
-    // We'll assume the bucket exists since the user has created it
-    // Just proceed with the upload directly
-    
-    // Upload to Supabase Storage
+    // Upload to Supabase Storage with proper authenticated user
     const { data, error } = await supabase.storage
       .from('post-media')
       .upload(fileName, file, {
