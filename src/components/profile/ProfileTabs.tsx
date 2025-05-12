@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PostCard from "@/components/PostCard";
@@ -60,19 +61,26 @@ const ProfileTabs = ({ profileData, userPosts, onTabChange }: ProfileTabsProps) 
           <div className="p-4">
             <div className="grid grid-cols-3 gap-1">
               {userPosts
-                .filter((post) => post.images && post.images.length > 0)
+                .filter((post) => post.image_url || post.video_url)
                 .map((post) => (
                   <div key={post.id} className="aspect-square overflow-hidden">
-                    <img 
-                      src={post.images![0]} 
-                      alt="Post media" 
-                      className="w-full h-full object-cover"
-                    />
+                    {post.image_url ? (
+                      <img 
+                        src={post.image_url} 
+                        alt="Post media" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : post.video_url ? (
+                      <video 
+                        src={post.video_url}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : null}
                   </div>
                 ))}
             </div>
             
-            {userPosts.filter((post) => post.images && post.images.length > 0).length === 0 && (
+            {userPosts.filter((post) => post.image_url || post.video_url).length === 0 && (
               <div className="p-8 text-center">
                 <p className="text-muted-foreground">No media yet</p>
               </div>

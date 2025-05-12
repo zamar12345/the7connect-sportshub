@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Heart, MessageSquare, Repeat2, Share } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,9 +28,10 @@ interface PostCardProps {
     id: string;
     content: string;
     created_at: string;
+    image_url?: string;
+    video_url?: string;
     user: PostUser;
     hashtags?: string[];
-    images?: string[];
     likes_count?: number;
     comments_count?: number;
   };
@@ -153,12 +155,23 @@ const PostCard = ({ post }: PostCardProps) => {
             </div>
           )}
           
-          {post.images && post.images.length > 0 && (
+          {post.image_url && (
             <div className="mt-2 mb-3 rounded-xl overflow-hidden">
               <img 
-                src={post.images[0]} 
+                src={post.image_url} 
                 alt="Post content" 
                 className="w-full object-cover rounded-xl"
+                style={{ maxHeight: "280px" }}
+              />
+            </div>
+          )}
+          
+          {post.video_url && (
+            <div className="mt-2 mb-3 rounded-xl overflow-hidden">
+              <video 
+                src={post.video_url} 
+                controls
+                className="w-full rounded-xl"
                 style={{ maxHeight: "280px" }}
               />
             </div>

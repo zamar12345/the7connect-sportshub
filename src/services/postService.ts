@@ -33,8 +33,16 @@ export const fetchPosts = async (options: FetchPostsOptions = {}): Promise<Post[
     let query = supabase
       .from('posts')
       .select(`
-        *,
-        user:users(id, username, full_name, avatar_url)
+        id,
+        content,
+        created_at,
+        image_url,
+        video_url,
+        location,
+        user_id,
+        user:users(id, username, full_name, avatar_url),
+        likes_count,
+        comments_count
       `)
       .order('created_at', { ascending: false });
       
@@ -59,8 +67,11 @@ export const fetchPosts = async (options: FetchPostsOptions = {}): Promise<Post[
     const { data, error } = await query;
       
     if (error) {
+      console.error("Error fetching posts:", error);
       throw error;
     }
+
+    console.log("Fetched posts:", data);
 
     // Cast the response data to our Post type and ensure likes_count and comments_count are defined
     return (data as any[]).map(post => ({
