@@ -4,7 +4,7 @@ import { Heart, MessageSquare, Repeat2, Share } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthProvider";
-import { likePost } from "@/services/postService";
+import { likePost } from "@/services/posts";
 import { toast } from "sonner";
 
 interface PostActionsProps {

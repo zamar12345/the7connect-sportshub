@@ -1,6 +1,6 @@
 
 import { useSupabaseQuery } from "./useSupabaseQuery";
-import { fetchPosts } from "@/services/postService";
+import { fetchPosts } from "@/services/posts";
 
 export function usePostsQuery(options = {}) {
   return useSupabaseQuery(

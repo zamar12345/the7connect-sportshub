@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthProvider";
-import { checkPostLikedStatus } from "@/services/postService";
+import { checkPostLikedStatus } from "@/services/posts";
 import {
   Dialog,
   DialogContent,

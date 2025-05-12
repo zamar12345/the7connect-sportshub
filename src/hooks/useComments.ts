@@ -1,7 +1,7 @@
 
 import { useSupabaseQuery } from "./useSupabaseQuery";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchComments, addComment } from "@/services/postService";
+import { fetchComments, addComment } from "@/services/posts";
 import { toast } from "sonner";
 import { Comment } from "@/types/supabase";
 
