@@ -1,4 +1,3 @@
-
 // Custom type definitions to use across the application
 // These types match our Supabase database schema
 
@@ -36,6 +35,7 @@ export type Post = {
   image_url?: string;
   video_url?: string; 
   location?: string; // Added for location support
+  hashtags?: string[]; // Add the hashtags field
   created_at: string;
   updated_at?: string;
   user?: User;

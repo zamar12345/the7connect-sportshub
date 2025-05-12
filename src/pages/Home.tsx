@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import MobileLayout from "@/components/layout/MobileLayout";
@@ -58,7 +57,7 @@ const Home = () => {
         full_name: post.user?.full_name || post.user?.username || '',
         avatar_url: post.user?.avatar_url
       },
-      hashtags: post.hashtags,
+      hashtags: post.hashtags || [],
       likes_count: post.likes_count || 0,
       comments_count: post.comments_count || 0,
     };
