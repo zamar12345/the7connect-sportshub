@@ -56,7 +56,7 @@ const PostCard = ({ post }: PostCardProps) => {
   }, [post.id, user]);
 
   return (
-    <div className="border-b border-border p-4">
+    <div className="border-b border-border p-4 group hover:bg-muted/5 transition-colors">
       <div className="flex flex-col space-y-3">
         <PostHeader user={post.user} timestamp={post.created_at} />
         

@@ -1,7 +1,7 @@
 
 import { PostSearchResult } from "@/services/search";
 import { Loader2 } from "lucide-react";
-import PostCard from "@/components/PostCard";
+import PostCard from "@/components/posts/PostCard";
 
 interface PostSearchResultsProps {
   posts: PostSearchResult[];

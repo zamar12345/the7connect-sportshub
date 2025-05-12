@@ -2,13 +2,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import MobileLayout from "@/components/layout/MobileLayout";
-import PostCard from "@/components/PostCard";
+import PostCard from "@/components/posts/PostCard";
 import StoriesRow from "@/components/StoriesRow";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePostsQuery, useFollowingPostsQuery } from "@/hooks/usePostsQuery";
 import { useAuth } from "@/context/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { Post } from "@/types/supabase";
 
 const Home = () => {
   const [activeTab, setActiveTab] = useState("forYou");
@@ -41,6 +42,26 @@ const Home = () => {
 
   const handleCreatePost = () => {
     navigate("/compose");
+  };
+  
+  // Helper function to format post data for PostCard
+  const formatPostForCard = (post: Post) => {
+    return {
+      id: post.id,
+      content: post.content,
+      created_at: post.created_at,
+      image_url: post.image_url,
+      video_url: post.video_url,
+      user: {
+        id: post.user?.id || '',
+        username: post.user?.username || '',
+        full_name: post.user?.full_name || post.user?.username || '',
+        avatar_url: post.user?.avatar_url
+      },
+      hashtags: post.hashtags,
+      likes_count: post.likes_count || 0,
+      comments_count: post.comments_count || 0,
+    };
   };
   
   return (
@@ -80,7 +101,7 @@ const Home = () => {
               ) : forYouPosts.length > 0 ? (
                 <div className="divide-y divide-border">
                   {forYouPosts.map((post) => (
-                    <PostCard key={post.id} post={post} />
+                    <PostCard key={post.id} post={formatPostForCard(post)} />
                   ))}
                 </div>
               ) : (
@@ -109,7 +130,7 @@ const Home = () => {
               ) : followingPosts.length > 0 ? (
                 <div className="divide-y divide-border">
                   {followingPosts.map((post) => (
-                    <PostCard key={post.id} post={post} />
+                    <PostCard key={post.id} post={formatPostForCard(post)} />
                   ))}
                 </div>
               ) : (
