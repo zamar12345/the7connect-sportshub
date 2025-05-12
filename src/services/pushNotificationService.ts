@@ -19,18 +19,6 @@ export const requestNotificationPermission = async (): Promise<boolean> => {
 };
 
 /**
- * Checks the current notification permission status
- * @returns {string} The current permission status: 'granted', 'denied', or 'default'
- */
-export const getNotificationPermissionStatus = (): string => {
-  if (!('Notification' in window)) {
-    return 'unsupported';
-  }
-  
-  return Notification.permission;
-};
-
-/**
  * Checks if the browser supports push notifications
  * @returns {boolean} Whether push is supported
  */
@@ -77,24 +65,6 @@ export const subscribeToPushNotifications = async (
   } catch (error) {
     console.error('Error subscribing to push notifications:', error);
     return null;
-  }
-};
-
-/**
- * Opens browser settings to allow users to change notification permissions
- * This is a guidance function as direct access to change permissions isn't possible from JavaScript
- * @returns {void}
- */
-export const openNotificationSettings = (): void => {
-  if (navigator.userAgent.includes("Chrome")) {
-    window.open('chrome://settings/content/notifications');
-  } else if (navigator.userAgent.includes("Firefox")) {
-    window.open('about:preferences#privacy');
-  } else if (navigator.userAgent.includes("Safari")) {
-    window.open('safari://settings/websites/notifications');
-  } else {
-    // Generic guidance for other browsers
-    window.open('https://support.google.com/chrome/answer/3220216?hl=en');
   }
 };
 

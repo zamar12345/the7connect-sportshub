@@ -16,16 +16,11 @@ self.addEventListener('push', function(event) {
       badge: '/favicon.ico',
       data: {
         url: data.url || '/notifications'
-      },
-      requireInteraction: true,
-      vibrate: [200, 100, 200]
+      }
     };
     
     event.waitUntil(
       self.registration.showNotification(data.title || 'SportHub Notification', options)
-      .catch(error => {
-        console.error('Failed to show notification:', error);
-      })
     );
   } catch (err) {
     console.error('Error showing notification:', err);
@@ -53,13 +48,5 @@ self.addEventListener('notificationclick', function(event) {
         return clients.openWindow(urlToOpen);
       }
     })
-    .catch(error => {
-      console.error('Error handling notification click:', error);
-    })
   );
-});
-
-// Handle notification error event
-self.addEventListener('notificationerror', function(event) {
-  console.error('Notification error:', event.error);
 });
