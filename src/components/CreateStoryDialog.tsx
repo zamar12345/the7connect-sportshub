@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -61,12 +62,23 @@ const CreateStoryDialog = ({ open, onOpenChange, onSuccess }: CreateStoryDialogP
       // Upload the image
       const fileExt = imageFile.name.split(".").pop();
       const fileName = `${user.id}/stories/${Date.now()}.${fileExt}`;
+      
+      // Add debug logging for story upload
+      console.log("Story upload - Authentication check:");
+      const { data: authData } = await supabase.auth.getSession();
+      console.log("Session exists:", !!authData.session);
+      console.log("User ID from session:", authData.session?.user?.id);
+      console.log("User ID from state:", user.id);
+      console.log("Attempting to upload story to:", fileName);
 
       const { error: uploadError } = await supabase.storage
         .from("stories")
         .upload(fileName, imageFile);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error("Story upload error:", uploadError);
+        throw uploadError;
+      }
 
       // Get the public URL
       const { data: publicUrlData } = supabase.storage
