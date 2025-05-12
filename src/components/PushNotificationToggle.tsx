@@ -6,11 +6,16 @@ import {
   requestNotificationPermission, 
   isPushNotificationSupported, 
   registerServiceWorker,
-  subscribeToPushNotifications
+  subscribeToPushNotifications,
+  getNotificationPermissionStatus,
+  openNotificationSettings
 } from "@/services/pushNotificationService";
 import { registerForPushNotifications, unregisterFromPushNotifications } from "@/services/notificationService";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthProvider";
+import { Button } from "@/components/ui/button";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface PushNotificationToggleProps {
   className?: string;
@@ -19,6 +24,7 @@ interface PushNotificationToggleProps {
 const PushNotificationToggle = ({ className = "" }: PushNotificationToggleProps) => {
   const [isEnabled, setIsEnabled] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
+  const [permissionStatus, setPermissionStatus] = useState<string>('default');
   const { user } = useAuth();
 
   useEffect(() => {
@@ -26,8 +32,12 @@ const PushNotificationToggle = ({ className = "" }: PushNotificationToggleProps)
     const supported = isPushNotificationSupported();
     setIsSupported(supported);
     
-    // Check if already subscribed
     if (supported) {
+      // Get current permission status
+      const status = getNotificationPermissionStatus();
+      setPermissionStatus(status);
+      
+      // Check if already subscribed
       navigator.serviceWorker.ready.then(registration => {
         registration.pushManager.getSubscription().then(subscription => {
           setIsEnabled(!!subscription);
@@ -45,6 +55,9 @@ const PushNotificationToggle = ({ className = "" }: PushNotificationToggleProps)
     if (enabled) {
       // Enable notifications
       const permissionGranted = await requestNotificationPermission();
+      
+      // Update permission status after request
+      setPermissionStatus(getNotificationPermissionStatus());
       
       if (!permissionGranted) {
         toast.error("Notification permission denied");
@@ -98,8 +111,30 @@ const PushNotificationToggle = ({ className = "" }: PushNotificationToggleProps)
     }
   };
 
+  // Don't render anything if notifications aren't supported
   if (!isSupported) {
     return null;
+  }
+  
+  // If permissions are denied, show guidance instead of toggle
+  if (permissionStatus === 'denied') {
+    return (
+      <div className={`space-y-2 ${className}`}>
+        <Alert variant="destructive" className="mb-2">
+          <AlertCircle className="h-4 w-4 mr-2" />
+          <AlertDescription>
+            Notification permissions are blocked. You need to enable them in your browser settings.
+          </AlertDescription>
+        </Alert>
+        <Button 
+          variant="outline" 
+          className="w-full" 
+          onClick={() => openNotificationSettings()}
+        >
+          Open Browser Settings
+        </Button>
+      </div>
+    );
   }
 
   return (
