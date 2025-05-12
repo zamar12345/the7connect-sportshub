@@ -20,7 +20,7 @@ export const searchPosts = async (
     let postsQuery = supabase
       .from('posts')
       .select(`
-        id, content, created_at, user_id,
+        id, content, created_at, user_id, image_url,
         user:users(username, avatar_url, sport)
       `)
       .ilike('content', `%${query}%`);
@@ -60,7 +60,8 @@ export const searchPosts = async (
       created_at: post.created_at,
       user_id: post.user_id,
       username: post.user?.username || 'Unknown',
-      avatar_url: post.user?.avatar_url
+      avatar_url: post.user?.avatar_url,
+      image_url: post.image_url
       // likes_count would be added here if available
     }));
   } catch (error: any) {

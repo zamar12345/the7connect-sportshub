@@ -19,7 +19,6 @@ export const fetchPosts = async (options: FetchPostsOptions = {}): Promise<Post[
         content,
         created_at,
         image_url,
-        video_url,
         location,
         user_id,
         user:users(id, username, full_name, avatar_url),

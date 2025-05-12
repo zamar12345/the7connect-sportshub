@@ -5,7 +5,7 @@ interface PostContentProps {
   content: string;
   hashtags?: string[];
   image_url?: string;
-  video_url?: string;
+  video_url?: string | null;
 }
 
 const PostContent = ({ content, hashtags, image_url, video_url }: PostContentProps) => {

@@ -26,7 +26,7 @@ interface PostCardProps {
     content: string;
     created_at: string;
     image_url?: string;
-    video_url?: string;
+    video_url?: string | null;
     user: PostUser;
     hashtags?: string[];
     likes_count?: number;
