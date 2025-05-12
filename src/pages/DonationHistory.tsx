@@ -12,32 +12,27 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { History, DollarSign } from "lucide-react";
+import { History, DollarSign, ExternalLink } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-
-// Define type for donation data
-type Donation = {
-  id: string;
-  amount: number;
-  message?: string;
-  created_at: string;
-  status: string;
-  stripe_session_id?: string;
-  donor_id?: string;
-  donor_username?: string;
-  donor_name?: string;
-  donor_avatar?: string;
-  recipient_id?: string;
-  recipient_username?: string;
-  recipient_name?: string;
-  recipient_avatar?: string;
-};
+import { Donation } from "@/types/supabase";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 const DonationHistory = () => {
   const { user } = useAuth();
   const [sentDonations, setSentDonations] = useState<Donation[]>([]);
   const [receivedDonations, setReceivedDonations] = useState<Donation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [viewType, setViewType] = useState<"cards" | "table">("cards");
 
   useEffect(() => {
     const fetchDonations = async () => {
@@ -82,6 +77,15 @@ const DonationHistory = () => {
       style: 'currency',
       currency: 'USD',
     }).format(amount);
+  };
+
+  // Format date nicely
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
   };
 
   // Function to get status badge color
@@ -132,7 +136,16 @@ const DonationHistory = () => {
               )}
             </Avatar>
             <div>
-              <CardTitle className="text-base">{otherParty.name}</CardTitle>
+              <CardTitle className="text-base">
+                {otherParty.id ? (
+                  <Link to={`/profile/${otherParty.id}`} className="hover:underline flex items-center">
+                    {otherParty.name}
+                    <ExternalLink size={14} className="ml-1 inline" />
+                  </Link>
+                ) : (
+                  otherParty.name
+                )}
+              </CardTitle>
               <CardDescription className="text-xs">
                 {formatDistanceToNow(new Date(donation.created_at), { addSuffix: true })}
               </CardDescription>
@@ -146,11 +159,67 @@ const DonationHistory = () => {
           <div className="flex justify-between items-center">
             <div>
               <p className="text-2xl font-bold text-primary">{formatAmount(donation.amount)}</p>
-              {donation.message && <p className="mt-2 text-sm">{donation.message}</p>}
+              {donation.message && <p className="mt-2 text-sm italic">"{donation.message}"</p>}
             </div>
           </div>
         </CardContent>
       </Card>
+    );
+  };
+
+  // Render donation table
+  const renderDonationTable = (donations: Donation[], isSent: boolean) => {
+    return (
+      <Table>
+        <TableCaption>{isSent ? 'Your sent donations' : 'Your received donations'}</TableCaption>
+        <TableHeader>
+          <TableRow>
+            <TableHead>{isSent ? 'Recipient' : 'Donor'}</TableHead>
+            <TableHead>Amount</TableHead>
+            <TableHead>Date</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Message</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {donations.map(donation => {
+            const person = isSent
+              ? {
+                  id: donation.recipient_id,
+                  name: getDisplayName(donation.recipient_username, donation.recipient_name)
+                }
+              : {
+                  id: donation.donor_id,
+                  name: getDisplayName(donation.donor_username, donation.donor_name)
+                };
+                
+            return (
+              <TableRow key={donation.id}>
+                <TableCell>
+                  {person.id ? (
+                    <Link to={`/profile/${person.id}`} className="hover:underline flex items-center">
+                      {person.name}
+                      <ExternalLink size={14} className="ml-1 inline" />
+                    </Link>
+                  ) : (
+                    person.name
+                  )}
+                </TableCell>
+                <TableCell className="font-medium">{formatAmount(donation.amount)}</TableCell>
+                <TableCell>{formatDate(donation.created_at)}</TableCell>
+                <TableCell>
+                  <Badge className={`${getStatusColor(donation.status)} text-white`}>
+                    {donation.status}
+                  </Badge>
+                </TableCell>
+                <TableCell className="max-w-[200px] truncate">
+                  {donation.message || '-'}
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
     );
   };
 
@@ -164,9 +233,27 @@ const DonationHistory = () => {
 
   return (
     <div className="container max-w-3xl mx-auto py-8 px-4">
-      <div className="flex items-center space-x-2 mb-6">
-        <History size={24} className="text-primary" />
-        <h1 className="text-2xl font-bold">Donation History</h1>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-2">
+          <History size={24} className="text-primary" />
+          <h1 className="text-2xl font-bold">Donation History</h1>
+        </div>
+        <div className="flex space-x-2">
+          <Button 
+            variant={viewType === "cards" ? "default" : "outline"} 
+            size="sm"
+            onClick={() => setViewType("cards")}
+          >
+            Cards
+          </Button>
+          <Button 
+            variant={viewType === "table" ? "default" : "outline"} 
+            size="sm"
+            onClick={() => setViewType("table")}
+          >
+            Table
+          </Button>
+        </div>
       </div>
       
       <Tabs defaultValue="sent">
@@ -183,7 +270,9 @@ const DonationHistory = () => {
               <p className="text-muted-foreground">When you support other athletes, your donations will appear here.</p>
             </div>
           ) : (
-            sentDonations.map(donation => renderDonationCard(donation, true))
+            viewType === "cards" 
+              ? sentDonations.map(donation => renderDonationCard(donation, true))
+              : renderDonationTable(sentDonations, true)
           )}
         </TabsContent>
         
@@ -195,7 +284,9 @@ const DonationHistory = () => {
               <p className="text-muted-foreground">When others support you, their donations will appear here.</p>
             </div>
           ) : (
-            receivedDonations.map(donation => renderDonationCard(donation, false))
+            viewType === "cards" 
+              ? receivedDonations.map(donation => renderDonationCard(donation, false))
+              : renderDonationTable(receivedDonations, false)
           )}
         </TabsContent>
       </Tabs>
