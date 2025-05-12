@@ -49,6 +49,13 @@ export const uploadMedia = async ({ file, userId, onProgress }: UploadMediaOptio
       onProgress(10);
     }
     
+    console.log("User authentication status check:");
+    const { data: authData } = await supabase.auth.getSession();
+    console.log("Session exists:", !!authData.session);
+    console.log("User ID from session:", authData.session?.user?.id);
+    console.log("User ID from parameter:", userId);
+    console.log("Attempting to upload file to:", fileName);
+    
     // Upload to Supabase Storage with proper authenticated user
     const { data, error } = await supabase.storage
       .from('post-media')
